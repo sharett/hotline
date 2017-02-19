@@ -103,6 +103,10 @@ if (count($comms)) {
 	include 'communications.php';
 }
 
+?>
+<footer><a href="https://github.com/sharett/hotline">View source code on Github</a></footer>
+<?php
+
 include 'footer.php';
 
 ?>
