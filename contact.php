@@ -1,0 +1,151 @@
+<?php
+/**
+* @file
+* Place a phone call, send a text and view the log for a particular phone number
+* 
+*/
+
+require_once 'config.php';
+require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+
+$include_calling = true; // include twilio client js
+include 'header.php';
+
+// URL parameters
+$start = (int)$_REQUEST['s'];
+$ph = trim($_REQUEST['ph']);
+$text = trim($_REQUEST['text']);
+$mark = (int)$_REQUEST['mark'];
+$unmark = (int)$_REQUEST['unmark'];
+
+// Settings
+$page = 50; // show per page
+
+// Mark an item as responded, or not responded
+if ($mark) {
+	$sql = "UPDATE communications SET responded=NOW() WHERE id='".addslashes($mark)."'";
+	if (!pp_db_command($sql, $error)) {
+		echo $error;
+	}
+}
+if ($unmark) {
+	$sql = "UPDATE communications SET responded=NULL WHERE id='".addslashes($unmark)."'";
+	if (!pp_db_command($sql, $error)) {
+		echo $error;
+	}
+}
+
+// send a text message?
+if ($ph && $text) {
+	$numbers = array($ph);
+	if (send_sms($numbers, $text, $error)) {
+		// store the text
+		$data = array(
+			'From' => $HOTLINE_CALLER_ID,
+			'To' => $ph,
+			'Body' => $text,
+			'MessageSid' => 'text'
+		);
+		storeCallData($data, $error);
+
+		$success = "The text was sent.";
+		$text = '';
+	}
+}
+
+// look up the contact's name
+whoIsCaller($name, $ph, $error);
+
+// any error message?
+if ($error) {
+?>
+	      <div class="alert alert-danger" role="alert"><?php echo $error ?></div>
+<?php
+}
+
+// any success message?
+if ($success) {
+?>
+	      <div class="alert alert-success" role="alert"><?php echo $success ?></div>
+<?php
+}
+
+// display the contact's information
+?>
+          <h2 class="sub-header">Contact <?php echo $ph ?><?php if ($name) echo " ({$name})" ?></h2>
+<?php
+if ($ph) {
+	// display the call, text and log
+?>
+          <form id="text-controls" action="contact.php?ph=<?php echo urlencode($ph) ?>" method="POST">
+		   <div class="form-group">
+			<label for="text-message">Send a text message</label>
+			<input type="text" class="form-control" name="text"
+			       placeholder="Text message" value="<?php echo $text ?>">
+ 		   </div>		  
+		   <button class="btn btn-success" id="button-text">Text</button>
+		  </form>
+          
+          <br />
+          <form id="call-controls" style="display: none;" onsubmit="return false;">
+		   <input type="hidden" id="phone-number" value="<?php echo $ph ?>">
+ 		   <label>Place an in-browser call</label><br />
+		   <button class="btn btn-success" id="button-call">Call</button>
+		   <button class="btn btn-danger" id="button-hangup">Hangup</button>
+		   <h5 id="log"></h5>
+		  </form>
+                    
+          <h3 class="sub-header">Log</h3>
+          <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or 
+          unmark an item as responded to.</p>
+<?php
+	// load all communications to or from this phone number
+	$sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, contacts_to.contact_name AS to_contact ".
+		"FROM communications ".
+		"LEFT JOIN contacts AS contacts_from ON contacts_from.phone = communications.phone_from ".
+		"LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
+		"WHERE communications.phone_from = '".addslashes($ph)."' OR ".
+		"      communications.phone_to = '".addslashes($ph)."' ".
+		"ORDER BY communication_time DESC LIMIT ".addslashes($start).",{$page}";
+	if (!pp_db_query($sql, $comms, $error)) {
+		echo $error;
+	}
+
+	// display the communications table
+	include 'communications.php';
+?>
+<p>
+<?php
+// show the previous button if we are not at the beginning
+if ($start > 0) {
+?>
+ <a class="btn btn-success" href="contact.php?ph=<?php echo urlencode($ph) ?>&s=<?php echo $start - $page ?>" role="button">&lt;&lt; Prev</a>
+<?php
+}
+// show the next button if there are more to show
+if (count($comms) >= $page) {
+?>
+ <a class="btn btn-success" href="contact.php?ph=<?php echo urlencode($ph) ?>&s=<?php echo $start + $page ?>" role="button">Next &gt;&gt;</a>
+<?php
+}
+?>
+</p>
+<?php
+
+} else {
+	// no phone number provided - prompt for one
+?>
+		  <form id="choose_number" action="contact.php">
+		   <div class="form-group">
+			<label for="text-message">Phone number</label>
+			<input type="text" class="form-control" name="ph" 
+			       placeholder="<?php echo $HOTLINE_CALLER_ID ?>">
+ 		   </div>		  
+		   <button class="btn btn-success" id="button-text">Lookup</button>
+		  </form>
+<?php
+}
+
+// display the footer
+include 'footer.php';
+?>

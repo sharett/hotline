@@ -1,0 +1,6 @@
+sanctdb
+sanctdb/
+vendor/
+.well-known/
+config.php
+
