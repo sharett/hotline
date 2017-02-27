@@ -7,12 +7,15 @@ It is not production ready and is very much in progress.
 ## Requirements
 
 - PHP (7.0 used, earlier versions may work).  Uses mysqli to interface with MySQL.
+- [Composer] (https://getcomposer.org) (a PHP package management utility), or manual installation of the [twilio-php] (https://github.com/twilio/twilio-php) library
 - MySQL (5.7 used, earlier versions may work)
-- a Twilio account
+- a [Twilio] (https://www.twilio.com) account
 
 ## Installation & configuration
 
-* Download or git clone this project
+* Download or git clone this project.
+
+* Run "composer install" in the main directory.  This installs the "twilio-php" library.
 
 * Password protect access to the directory you installed it to.  HTTP basic security should work.
 
@@ -41,6 +44,13 @@ It is not production ready and is very much in progress.
   * Once you've created the TwiML app, copy its SID and set the $TWILIO_TWIML_APP_SID setting in config.php to it.
 
 * By default, English and Spanish are set - edit the "languages" table to modify this.  The Twilio code is the language that the voice "alice" will use to speak the text.
+
+## Usage
+
+The broadcast interface supports sending, importing and removing numbers.  When importing numbers, each one is send a welcome message with instructions about how to stop receiving texts.
+
+The hotline interface supports viewing active volunteers (those signed up to receive calls), viewing call/text logs and language information, sending texts and placing phone calls.  You can also mark texts and voicemails as responded to or not.  All editing of the volunteers information and times they are accepting calls is done by editing the database directly.
+
 
 ## License
 
