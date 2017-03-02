@@ -64,15 +64,15 @@ The broadcast interface supports sending, importing and removing numbers.  When 
 
 The hotline interface supports viewing active staff (those signed up to receive calls), viewing call/text logs and language information, sending texts and placing phone calls.  You can also mark texts and voicemails as responded to or not.  All editing of the volunteers information and times they are accepting calls is done by editing the database directly.
 
-## Call flow
+## Hotline flow
 
 Voice calls:
 
-* Says: “Sanctuary in the Streets hotline.  Press 1 for English. Para español oprima dos.”
+* Says: “($HOTLINE_NAME) hotline.  Press 1 for English. Para español oprima dos.”
 * Wait 15 seconds or for a language to be chosen. On timeout, defaults to English.
 * Rings to the caller, and simultaneously calls all available hotline staff, for 40 seconds.
 * Any hotline staff who answer hear: 
-  * “Sanctuary in the Streets hotline call.  Press 1 to accept.”
+  * “($HOTLINE_NAME) hotline call.  Press 1 to accept.”
   * If they press 1: “Connecting you to the caller.”
   * Otherwise, “Goodbye.” and hangs up.
 * If any hotline staff accept the call, they are connected to the caller.  Maximum call length 1 hour.
