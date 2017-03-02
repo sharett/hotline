@@ -38,7 +38,7 @@ It is not production ready and is very much in progress.
 
 * Import the "database_schema.sql" file into the newly created database.
 
-* Edit the "config.php" file:
+* Copy the "config_sample.php" file to "config.php".  Edit the "config.php" file:
   * The $TWILIO_ACCOUNT_SID and $TWILIO_AUTH_TOKEN can be found from the [Twilio Account Dashboard] (https://www.twilio.com/user/account).
   * Put the database credentials in the $HOTLINE_DB_ settings.
   * For mass texting, set the $BROADCAST_ settings including the phone number to use in the '+1NXXNXXXXXX' format ($BROADCAST_CALLER_ID).
