@@ -64,6 +64,33 @@ The broadcast interface supports sending, importing and removing numbers.  When 
 
 The hotline interface supports viewing active staff (those signed up to receive calls), viewing call/text logs and language information, sending texts and placing phone calls.  You can also mark texts and voicemails as responded to or not.  All editing of the volunteers information and times they are accepting calls is done by editing the database directly.
 
+## Call flow
+
+Voice calls:
+
+* Says: “Sanctuary in the Streets hotline.  Press 1 for English. Para español oprima dos.”
+* Wait 15 seconds or for a language to be chosen. On timeout, defaults to English.
+* Rings to the caller, and simultaneously calls all available hotline staff, for 40 seconds.
+* Any hotline staff who answer hear: 
+  * “Sanctuary in the Streets hotline call.  Press 1 to accept.”
+  * If they press 1: “Connecting you to the caller.”
+  * Otherwise, “Goodbye.” and hangs up.
+* If any hotline staff accept the call, they are connected to the caller.  Maximum call length 1 hour.
+* If no one answers in time, the caller hears: “No one is available to answer.  Please leave a message.”  Maximum length of message, 5 minutes.
+* If a voicemail is left, all on-call staff are alerted via a text message.
+
+Text messages:
+
+* Administrative requests:
+  * 'off': Calls and texts to hotline staff are disabled.  Response: “Hotline calls are now disabled.” Staff must send 'on' to enable calls.
+  * 'on', 'start','unstop': Calls and texts to hotline staff are enabled.  Response: “Hotline calls are now enabled.”
+  * 'stop', 'stopall', 'unsubscribe', 'cancel', 'end' or 'quit': Calls and texts to hotline staff are disabled.  Response: “You have successfully been unsubscribed. You will not receive any more messages from this number. Reply START to resubscribe.” This is an automated response that can't be changed.  Staff must send 'start' to receive any texts in the future.
+* Texts from hotline staff:
+  * Text is forwarded to all hotline staff (whether on duty or not), in this format: “(staff's phone number): (original text)”
+* Texts from anyone else:
+  * Text is forwarded to all hotline staff on duty, in this format: “Hotline text from (sender's phone number): (original text)”
+  * Response: “Your message has been received.  Someone will respond shortly.”
+
 ## To do
 
 * Consider a template library to separate the logic from the presentation.
