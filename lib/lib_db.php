@@ -14,7 +14,7 @@
 *
 */
 
-function pp_databaseConnect()
+function db_databaseConnect()
 {
     global $db;
     global $HOTLINE_DB_DATABASE, $HOTLINE_DB_USERNAME, $HOTLINE_DB_PASSWORD,
@@ -41,7 +41,7 @@ function pp_databaseConnect()
 *
 */
 
-function pp_databaseDisconnect()
+function db_databaseDisconnect()
 {
     global $db;
 	
@@ -68,7 +68,7 @@ function pp_databaseDisconnect()
 *   True if recorded successfully
 */
 
-function pp_error($description, $severity = 'error')
+function db_error($description, $severity = 'error')
 {
     $severity = trim(addslashes($severity));
     $description = trim(addslashes($description));
@@ -78,7 +78,7 @@ function pp_error($description, $severity = 'error')
         "source='".addslashes($_SERVER['SCRIPT_NAME'])."',".
         "error_time=NOW(),".
         "description='{$description}'";
-    return pp_db_command($sql, $error);
+    return db_db_command($sql, $error);
 }
 
 /**
@@ -95,7 +95,7 @@ function pp_error($description, $severity = 'error')
 *   True if the query was successful, otherwise false.
 */
 
-function pp_db_command($sql, &$error)
+function db_db_command($sql, &$error)
 {
     global $db;
     
@@ -116,7 +116,7 @@ function pp_db_command($sql, &$error)
 *   The number of affected rows.
 */
 
-function pp_db_affected_rows()
+function db_db_affected_rows()
 {
 	global $db;
 	return $db->affected_rows;
@@ -138,7 +138,7 @@ function pp_db_affected_rows()
 *   True if the query was successful, otherwise false.
 */
 
-function pp_db_query($sql, &$results, &$error)
+function db_db_query($sql, &$results, &$error)
 {
     global $db;
     
@@ -171,11 +171,11 @@ function pp_db_query($sql, &$results, &$error)
 *   True if the query was successful, otherwise false.
 */
 
-function pp_db_getrow($sql, &$results, &$error)
+function db_db_getrow($sql, &$results, &$error)
 {
     global $db;
     
-    if (!pp_db_query($sql, $results, $error)) {
+    if (!db_db_query($sql, $results, $error)) {
         return false;
     }
 
@@ -199,7 +199,7 @@ function pp_db_getrow($sql, &$results, &$error)
 *   True if the query was successful, otherwise false.
 */
 
-function pp_db_getcol($sql, &$results, &$error)
+function db_db_getcol($sql, &$results, &$error)
 {
     global $db;
     
@@ -232,7 +232,7 @@ function pp_db_getcol($sql, &$results, &$error)
 *   True if the query was successful, otherwise false.
 */
 
-function pp_db_getone($sql, &$results, &$error)
+function db_db_getone($sql, &$results, &$error)
 {
     global $db;
     
@@ -264,7 +264,7 @@ function pp_db_getone($sql, &$results, &$error)
 *   True if the query was successful, otherwise false.
 */
 
-function pp_db_getassoc($sql, &$results, &$error)
+function db_db_getassoc($sql, &$results, &$error)
 {
     global $db;
     
@@ -286,7 +286,7 @@ function pp_db_getassoc($sql, &$results, &$error)
 *   Variable to print.
 */
 
-function pp_print($data)
+function db_print($data)
 {
 	echo "<pre>";
 	print_r($data);

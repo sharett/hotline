@@ -23,13 +23,13 @@ $page = 50;
 // Mark an item as responded, or not responded
 if ($mark) {
 	$sql = "UPDATE communications SET responded=NOW() WHERE id='".addslashes($mark)."'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		echo $error;
 	}
 }
 if ($unmark) {
 	$sql = "UPDATE communications SET responded=NULL WHERE id='".addslashes($unmark)."'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		echo $error;
 	}
 }
@@ -40,7 +40,7 @@ $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, cont
 	"LEFT JOIN contacts AS contacts_from ON contacts_from.phone = communications.phone_from ".
 	"LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
 	"ORDER BY communication_time DESC LIMIT ".addslashes($start).",{$page}";
-if (!pp_db_query($sql, $comms, $error)) {
+if (!db_db_query($sql, $comms, $error)) {
     echo $error;
 }
 

@@ -8,16 +8,16 @@
 */
 
 require_once '../config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
-pp_databaseConnect();
+db_databaseConnect();
 
 // store call info
 $_REQUEST['From'] = $HOTLINE_CALLER_ID;
 $_REQUEST['Body'] = "(call from website)";
-storeCallData($_REQUEST, $error);
+sms_storeCallData($_REQUEST, $error);
 
-pp_databaseDisconnect();
+db_databaseDisconnect();
 
 header('Content-Type: application/json');
 echo json_encode(array(

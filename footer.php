@@ -34,5 +34,5 @@ if ($include_calling) {
 </html>
 <?php
 
-pp_databaseDisconnect();
+db_databaseDisconnect();
 ?>

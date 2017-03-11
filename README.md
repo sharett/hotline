@@ -85,11 +85,9 @@ Text messages:
   * 'off': Calls and texts to hotline staff are disabled.  Response: “Hotline calls are now disabled.” Staff must send 'on' to enable calls.
   * 'on', 'start','unstop': Calls and texts to hotline staff are enabled.  Response: “Hotline calls are now enabled.”
   * 'stop', 'stopall', 'unsubscribe', 'cancel', 'end' or 'quit': Calls and texts to hotline staff are disabled.  Response: “You have successfully been unsubscribed. You will not receive any more messages from this number. Reply START to resubscribe.” This is an automated response that can't be changed.  Staff must send 'start' to receive any texts in the future.
-* Texts from hotline staff:
-  * Text is forwarded to all hotline staff (whether on duty or not), in this format: “(staff's phone number): (original text)”
-* Texts from anyone else:
+* Texts:
   * Text is forwarded to all hotline staff on duty, in this format: “Hotline text from (sender's phone number): (original text)”
-  * Response: “Your message has been received.  Someone will respond shortly.”
+  * Response from initial text, or after a week of no texts received from the person: “Your message has been received.  Someone will respond shortly.”
 
 ## To do
 

@@ -9,11 +9,11 @@
 * 
 */
 
-pp_databaseConnect();
+db_databaseConnect();
 
 $pages = array("Broadcast" => "broadcast.php", "Log" => "log.php", 
     "Call / Text" => "contact.php", 
-    "Contacts" => "contacts.php", "Languages" => "languages.php", 
+    "Staff" => "staff.php", "Languages" => "languages.php", 
 	"Database" => "sanctdb/");
 
 ?>

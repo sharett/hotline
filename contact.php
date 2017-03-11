@@ -6,7 +6,7 @@
 */
 
 require_once 'config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
 $include_calling = true; // include twilio client js
 include 'header.php';
@@ -24,13 +24,13 @@ $page = 50; // show per page
 // Mark an item as responded, or not responded
 if ($mark) {
 	$sql = "UPDATE communications SET responded=NOW() WHERE id='".addslashes($mark)."'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		echo $error;
 	}
 }
 if ($unmark) {
 	$sql = "UPDATE communications SET responded=NULL WHERE id='".addslashes($unmark)."'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		echo $error;
 	}
 }
@@ -38,7 +38,7 @@ if ($unmark) {
 // send a text message?
 if ($ph && $text) {
 	$numbers = array($ph);
-	if (send_sms($numbers, $text, $error)) {
+	if (sms_send($numbers, $text, $error)) {
 		// store the text
 		$data = array(
 			'From' => $HOTLINE_CALLER_ID,
@@ -46,7 +46,7 @@ if ($ph && $text) {
 			'Body' => $text,
 			'MessageSid' => 'text'
 		);
-		storeCallData($data, $error);
+		sms_storeCallData($data, $error);
 
 		$success = "The text was sent.";
 		$text = '';
@@ -54,7 +54,7 @@ if ($ph && $text) {
 }
 
 // look up the contact's name
-whoIsCaller($name, $ph, $error);
+sms_whoIsCaller($name, $ph, $error);
 
 // any error message?
 if ($error) {
@@ -107,7 +107,7 @@ if ($ph) {
 		"WHERE communications.phone_from = '".addslashes($ph)."' OR ".
 		"      communications.phone_to = '".addslashes($ph)."' ".
 		"ORDER BY communication_time DESC LIMIT ".addslashes($start).",{$page}";
-	if (!pp_db_query($sql, $comms, $error)) {
+	if (!db_db_query($sql, $comms, $error)) {
 		echo $error;
 	}
 

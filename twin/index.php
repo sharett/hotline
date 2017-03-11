@@ -1,5 +1,13 @@
 <?php
+/**
+* @file
+* Redirect requests to view this directory to the home page
+*
+* ...
+* 
+*/
 
-echo "Hello!";
+header("Location: ../index.php");
+exit;
 
 ?>

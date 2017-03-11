@@ -8,14 +8,14 @@
 */
 
 require_once '../config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
-pp_databaseConnect();
+db_databaseConnect();
 
 // store the voicemail
 $_REQUEST['status'] = 'voicemail';
 $_REQUEST['Body'] = $_REQUEST['RecordingUrl'];
-storeCallData($_REQUEST, $error);
+sms_storeCallData($_REQUEST, $error);
 
 // URL parameters
 $url = $_REQUEST['RecordingUrl'];
@@ -47,7 +47,7 @@ if (!$url) {
 </Response>
 
 <?php
-pp_databaseDisconnect();
+db_databaseDisconnect();
 
 
 /**
@@ -77,7 +77,7 @@ function alertVolunteersOfVoicemail($from, $url, $duration, &$error)
 		"Log in to the website to listen to this voicemail.";
 		
 	// look up who is on duty
-	if (!getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error)) {
+	if (!sms_getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error)) {
 		return false;
 	}
 	
@@ -93,12 +93,12 @@ function alertVolunteersOfVoicemail($from, $url, $duration, &$error)
 	}
 	
 	// identify the caller
-	if (whoIsCaller($contact_name, $from, $error) && $contact_name) {
+	if (sms_whoIsCaller($contact_name, $from, $error) && $contact_name) {
 		$from .= " ({$contact_name})";
 	}
 
 	// send the texts
-	if (!send_sms($numbers, $body, $error)) {
+	if (!sms_send($numbers, $body, $error)) {
 		return false;
 	}
 	

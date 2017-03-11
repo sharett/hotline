@@ -6,7 +6,7 @@
 */
 
 require_once 'config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
 include 'header.php';
 
@@ -35,7 +35,7 @@ if ($action == 'broadcast') {
 
 // get the count of the active numbers
 $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
-pp_db_getone($sql, $broadcast_count, $error);
+db_db_getone($sql, $broadcast_count, $error);
 
 // any error message?
 if ($error) {
@@ -140,7 +140,7 @@ function sendBroadcastText($text, &$error, &$message)
 	
 	// load the broadcast numbers
 	$sql = "SELECT phone FROM broadcast WHERE status='active'";
-	if (!pp_db_getcol($sql, $numbers, $error)) {
+	if (!db_db_getcol($sql, $numbers, $error)) {
 		return false;
 	}
 	
@@ -150,7 +150,7 @@ function sendBroadcastText($text, &$error, &$message)
 	}
 	
 	// send the texts
-	if (!send_sms($numbers, $text, $error, $BROADCAST_CALLER_ID)) {
+	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID)) {
 		return false;
 	}
 	
@@ -161,7 +161,7 @@ function sendBroadcastText($text, &$error, &$message)
 		'Body' => $text,
 		'MessageSid' => 'text'
 	);
-	storeCallData($data, $error);
+	sms_storeCallData($data, $error);
 
 	$message = "Text sent to " . count($numbers) . " numbers.";
 	return true;
@@ -216,7 +216,7 @@ function importNumbers($numbers, &$error, &$message)
 
 		// is this number in the database already?
 		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!pp_db_getone($sql, $number_exists, $error)) {
+		if (!db_db_getone($sql, $number_exists, $error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
 		}
@@ -227,7 +227,7 @@ function importNumbers($numbers, &$error, &$message)
 		
 		// add the number to the database
 		$sql = "INSERT INTO broadcast SET phone='".addslashes($number)."', status='active'";
-		if (!pp_db_command($sql, $db_error)) {
+		if (!db_db_command($sql, $db_error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
 		}
@@ -235,7 +235,7 @@ function importNumbers($numbers, &$error, &$message)
 		// send a welcome message if set
 		if ($BROADCAST_WELCOME) {
 			$welcome_numbers = array($number);
-			if (!send_sms($welcome_numbers, $BROADCAST_WELCOME, $error, $BROADCAST_CALLER_ID)) {
+			if (!sms_send($welcome_numbers, $BROADCAST_WELCOME, $error, $BROADCAST_CALLER_ID)) {
 				$error .= "{$number}: Failed to send welcome message.<br />\n";
 				continue;
 			}
@@ -302,7 +302,7 @@ function removeNumbers($numbers, &$error, &$message)
 
 		// is this number in the database?
 		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!pp_db_getone($sql, $number_exists, $error)) {
+		if (!db_db_getone($sql, $number_exists, $error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
 		}
@@ -313,7 +313,7 @@ function removeNumbers($numbers, &$error, &$message)
 
 		// remove the number from the database
 		$sql = "DELETE FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!pp_db_command($sql, $db_error)) {
+		if (!db_db_command($sql, $db_error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
 		}
@@ -350,13 +350,13 @@ function loadNumbers(&$numbers_active, &$numbers_disabled, &$error)
 {
 	// load active numbers
 	$sql = "SELECT phone FROM broadcast WHERE status='active'";
-	if (!pp_db_getcol($sql, $numbers_active, $error)) {
+	if (!db_db_getcol($sql, $numbers_active, $error)) {
 		return false;
 	}
 
 	// load disabled numbers
 	$sql = "SELECT phone FROM broadcast WHERE status='disabled'";
-	if (!pp_db_getcol($sql, $numbers_disabled, $error)) {
+	if (!db_db_getcol($sql, $numbers_disabled, $error)) {
 		return false;
 	}
 	

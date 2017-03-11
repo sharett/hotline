@@ -11,16 +11,16 @@
 */
 
 require_once '../config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
 $DEFAULT_LANGUAGE = 1; // English
 
-pp_databaseConnect();
+db_databaseConnect();
 
 // what language did they choose?
 $language_id = (int)$_REQUEST['Digits'];
 $sql = "SELECT id FROM languages WHERE id='". addslashes($language_id) . "'";
-if (!pp_db_getrow($sql, $language, $error)) {
+if (!db_db_getrow($sql, $language, $error)) {
     // error, use default language
     $language_id = $DEFAULT_LANGUAGE;
 }
@@ -31,9 +31,9 @@ if (!$language['id']) {
 }
 
 // who should we call given the current day, time and language?
-getActiveContacts($contacts, $language_id, false /* not texting */, $error);
+sms_getActiveContacts($contacts, $language_id, false /* not texting */, $error);
 
-pp_databaseDisconnect();
+db_databaseDisconnect();
 
 header("content-type: text/xml");
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";

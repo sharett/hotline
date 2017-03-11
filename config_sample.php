@@ -18,8 +18,8 @@ $HOTLINE_NAME = 'Just Another Hotline';
 // Filesystem path to the document root
 $HTML_BASE = '/home/hotline/html/';
 
-// Filesystem path to the Twilio interface directory
-$TWILIO_INTERFACE_BASE = $HTML_BASE . 'twin/';
+// Filesystem path to the 'lib' directory
+$LIB_BASE = $HTML_BASE . 'lib/';
 
 // Web path to the Twilio interface directory
 $TWILIO_INTERFACE_WEBROOT = 'https://username:password@hotline.hotline.org/twin/';
@@ -63,4 +63,4 @@ $HOTLINE_DB_HOSTNAME = 'localhost';
 date_default_timezone_set('America/New_York');
 
 // include the database and other common functions
-require_once 'lib_db.php';
+require_once 'lib/lib_db.php';

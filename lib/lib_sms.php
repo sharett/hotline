@@ -34,7 +34,7 @@ use Twilio\Twiml;
 *   True if retrieved successfully.
 */
 
-function getActiveContacts(&$contacts, $language_id, $texting, &$error)
+function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
 {
     $day = date('D');
     $weekend = ($day == 'Sun' || $day == 'Sat');
@@ -50,7 +50,7 @@ function getActiveContacts(&$contacts, $language_id, $texting, &$error)
         ") AND ".
         "((earliest < CURTIME() AND latest > CURTIME()) OR ".
         " (earliest > latest AND (earliest < CURTIME() OR latest > CURTIME()))))";
-    if (!pp_db_query($sql, $contacts, $error)) {
+    if (!db_db_query($sql, $contacts, $error)) {
         return false;
     }
 
@@ -75,7 +75,7 @@ function getActiveContacts(&$contacts, $language_id, $texting, &$error)
 *   True if sent.
 */
 
-function send_sms($numbers, $text, &$error, $from = '')
+function sms_send($numbers, $text, &$error, $from = '')
 {
 	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
 	
@@ -117,7 +117,7 @@ function send_sms($numbers, $text, &$error, $from = '')
 *   True if sent.
 */
 
-function storeCallData($data, &$error)
+function sms_storeCallData($data, &$error)
 {
 	// pull out the call data
 	$from = $data['From'];
@@ -161,7 +161,7 @@ function storeCallData($data, &$error)
 		"twilio_sid='".addslashes($twilio_sid)."', ".
 		"status='".addslashes($status)."', ".
 		"media_urls='{$media_urls}'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		return false;
 	}
 	
@@ -184,10 +184,10 @@ function storeCallData($data, &$error)
 *   True unless an error occurred.
 */
 
-function whoIsCaller(&$name, $number, &$error)
+function sms_whoIsCaller(&$name, $number, &$error)
 {
 	$sql = "SELECT contact_name FROM contacts WHERE phone='".addslashes($number)."'";
-	if (!pp_db_getone($sql, $name, $error)) {
+	if (!db_db_getone($sql, $name, $error)) {
 		return false;
 	}
 	
@@ -283,12 +283,12 @@ function sms_updateNumber($enable, $from, $to, &$response, &$error)
 			"LEFT JOIN contacts ON call_times.contact_id = contacts.id ".
 			"SET enabled='".addslashes($enabled)."' ".
 			"WHERE contacts.phone = '".addslashes($from)."'";
-		if (!pp_db_command($sql, $error)) {
+		if (!db_db_command($sql, $error)) {
 			return false;
 		}
 		
 		// only respond if they are listed in the call_times table
-		if (pp_db_affected_rows()) {
+		if (db_db_affected_rows()) {
 			if ($enable) {
 				$response .= "Hotline calls are now enabled. ";
 			} else {
@@ -301,7 +301,7 @@ function sms_updateNumber($enable, $from, $to, &$response, &$error)
 	if ($to == $BROADCAST_CALLER_ID) {
 		// is this phone number in the database?
 		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone = '".addslashes($from)."'";
-		if (!pp_db_getone($sql, $broadcast_count, $error)) {
+		if (!db_db_getone($sql, $broadcast_count, $error)) {
 			return false;
 		}
 		if ($broadcast_count == 0 && $enable) {
@@ -312,7 +312,7 @@ function sms_updateNumber($enable, $from, $to, &$response, &$error)
 			$sql = "UPDATE broadcast SET status='" . ($enable ? 'active' : 'disabled') . "' ".
 				"WHERE phone='".addslashes($from)."'";
 		}
-		if (!pp_db_command($sql, $error)) {
+		if (!db_db_command($sql, $error)) {
 			return false;
 		}
 		

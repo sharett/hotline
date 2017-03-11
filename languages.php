@@ -10,7 +10,7 @@ require_once 'config.php';
 
 include 'header.php';
 
-if (!pp_db_query("SELECT * FROM languages", $languages, $error)) {
+if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
     echo $error;
 }
 

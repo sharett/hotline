@@ -19,20 +19,20 @@ $unmark = (int)$_REQUEST['unmark'];
 // Mark an item as responded, or not responded
 if ($mark) {
 	$sql = "UPDATE communications SET responded=NOW() WHERE id='".addslashes($mark)."'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		echo $error;
 	}
 }
 if ($unmark) {
 	$sql = "UPDATE communications SET responded=NULL WHERE id='".addslashes($unmark)."'";
-	if (!pp_db_command($sql, $error)) {
+	if (!db_db_command($sql, $error)) {
 		echo $error;
 	}
 }
 
 // load the number of active broadcast numbers
 $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
-pp_db_getone($sql, $broadcast_count, $error);
+db_db_getone($sql, $broadcast_count, $error);
 
 // load all communications that need to be responded to
 $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, contacts_to.contact_name AS to_contact ".
@@ -42,7 +42,7 @@ $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, cont
 	"WHERE responded IS NULL AND (status = 'text' OR status = 'voicemail') AND ".
 	"	phone_to = '".addslashes($HOTLINE_CALLER_ID) . "' ".
 	"ORDER BY communication_time";
-if (!pp_db_query($sql, $comms, $error)) {
+if (!db_db_query($sql, $comms, $error)) {
 	echo $error;
 }
 
@@ -67,7 +67,7 @@ if (count($comms)) {
 }
 ?>
 			  </h3>
-			  <p>View active volunteers and make calls and texts from the <b><?php echo $HOTLINE_CALLER_ID ?></b> number.
+			  <p>View active hotline staff and make calls and texts from the <b><?php echo $HOTLINE_CALLER_ID ?></b> number.
 <?php
 if (count($comms)) {
 	if (count($comms) == 1) {
@@ -80,7 +80,7 @@ if (count($comms)) {
 			  </p>
 			  <p>
 				<a class="btn btn-success" href="contact.php" role="button">Call / Text</a>
-				<a class="btn btn-success" href="contacts.php" role="button">Contacts</a>
+				<a class="btn btn-success" href="staff.php" role="button">Staff</a>
 				<a class="btn btn-success" href="languages.php" role="button">Languages</a>
 			  </p>
 		   </div>

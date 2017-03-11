@@ -9,19 +9,19 @@
 */
 
 require_once '../config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
-pp_databaseConnect();
+db_databaseConnect();
 
 // store call info
-storeCallData($_REQUEST, $error);
+sms_storeCallData($_REQUEST, $error);
 
 // load the list of languages
-if (!pp_db_query("SELECT * FROM languages", $languages, $error)) {
+if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
     // error!
 }
 
-pp_databaseDisconnect();
+db_databaseDisconnect();
 
 header("content-type: text/xml");
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";

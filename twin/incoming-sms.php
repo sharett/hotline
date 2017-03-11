@@ -10,12 +10,12 @@
 */
 
 require_once '../config.php';
-require_once $TWILIO_INTERFACE_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
-pp_databaseConnect();
+db_databaseConnect();
 
 // store the text
-storeCallData($_REQUEST, $error);
+sms_storeCallData($_REQUEST, $error);
 
 // the text data
 $from = $_REQUEST['From'];
@@ -32,6 +32,9 @@ if ((int)$_REQUEST['NumMedia']) {
 	}
 }
 
+// by default, send no response
+$message = '';
+
 // is this an administrative request?
 if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 	// yes it was
@@ -41,19 +44,8 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 } else {
 	// no, process normally
 
-	// is the sender a volunteer?
-	$is_volunteer = isVolunteer($from, $error);
-
-	if ($is_volunteer) {
-		// yes, text all other volunteers and don't respond
-		$sql = "SELECT phone FROM contacts ".
-			"LEFT JOIN call_times ON call_times.contact_id = contacts.id ".
-			"WHERE call_times.id IS NOT NULL AND call_times.receive_texts = 'y'";
-		pp_db_query($sql, $contacts, $error);
-	} else {
-		// no, look up who is on duty
-		getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error);
-	}
+    // look up who is on duty
+	sms_getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error);
 
 	// format the numbers
 	$numbers = array();
@@ -66,20 +58,17 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 	}
 
 	// identify the texter
-	if (whoIsCaller($contact_name, $from, $error) && $contact_name) {
+	if (sms_whoIsCaller($contact_name, $from, $error) && $contact_name) {
 		$from .= " ({$contact_name})";
 	}
 
 	// was anything sent?
 	if ($from && $body) {
 		// yes
-		if ($is_volunteer) {
-			$forwarded = "{$from}: {$body}";
-		} else {
-			$forwarded = "Hotline text from {$from}: {$body}";
-		}
+		$forwarded = "Hotline text from {$from}: {$body}";
+
 		// attempt to forward
-		if (!send_sms($numbers, $forwarded, $error)) {
+		if (!sms_send($numbers, $forwarded, $error)) {
 			$error = "Unable to forward your text.";
 		}
 	} else {
@@ -88,8 +77,12 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 
 	if ($error) {
 		$message = "There was a problem: {$error}";
-	} else if (!$is_volunteer) {
-		$message = "Your message has been received.  Someone will respond shortly.";
+	} else {
+		// have we received a text from this number recently?
+		if (!hasTextedRecently($from, $error)) {
+			// no, send an automated response
+			$message = "Your message has been received.  Someone will respond shortly.";
+		}
 	}
 }
 
@@ -108,9 +101,10 @@ if (trim($message)) {
 <?php
 
 /**
-* Does a phone number belong to a volunteer?
+* Have we received a text recently from this number?
 *
-* ...
+* If we've received a text from this number (to the hotline) in the past
+* week, return true.
 * 
 * @param string $from
 *   The phone number to check
@@ -118,21 +112,24 @@ if (trim($message)) {
 *   An error if one occurred.
 *   
 * @return bool
-*   True if the phone number belongs to a volunteer, false if not or if an
-*   error occurred.
+*   True if a text was recently received, false if not or if an error 
+*   occurred.
 */
 
-function isVolunteer($from, &$error)
+function hasTextedRecently($from, &$error)
 {
-	$sql = "SELECT call_times.id AS call_time_id FROM `contacts` ".
-		"LEFT JOIN call_times ON call_times.contact_id = contacts.id ".
-		"WHERE contacts.phone = '".addslashes($from)."'";
-	if (!pp_db_getrow($sql, $sender, $error)) {
+	global $HOTLINE_CALLER_ID;
+	
+	$sql = "SELECT COUNT(*) FROM communications ".
+		"WHERE phone_to='".addslashes($HOTLINE_CALLER_ID)."' AND ".
+		" phone_from='".addslashes($from)."' AND ".
+		" status='text' AND communication_time > DATE_SUB(NOW(), INTERVAL 7 DAY)";
+	if (!db_db_getone($sql, $recent_texts, $error)) {
 		return false;
 	}
 	
-	if ($sender['call_time_id']) {
-		// at least one call time exists, so they are a volunteer
+	if ($recent_texts > 0) {
+		// at least one text in the last week
 		return true;
 	}
 	
