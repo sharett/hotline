@@ -11,9 +11,10 @@
 
 db_databaseConnect();
 
-$pages = array("Broadcast" => "broadcast.php", "Log" => "log.php", 
+$pages = array("Broadcast" => "broadcast.php", 
     "Call / Text" => "contact.php", 
     "Staff" => "staff.php", "Languages" => "languages.php", 
+    "Log" => "log.php", 
 	"Database" => "sanctdb/");
 
 ?>
@@ -55,7 +56,9 @@ $pages = array("Broadcast" => "broadcast.php", "Log" => "log.php",
           <ul class="nav navbar-nav navbar-right">
 <?php
 foreach ($pages as $title => $page) {
-    if ($_SERVER['PHP_SELF'] == '/' . $page) {
+	// remove anything after an underscore, to allow for subpages
+	$main_page = removeSubpage($_SERVER['PHP_SELF']);
+    if ($main_page == '/' . $page) {
 ?>
             <li class="active"><a href="<?php echo $page ?>"><?php echo $title ?> <span class="sr-only">(current)</span></a></li>
 <?php
@@ -75,3 +78,32 @@ foreach ($pages as $title => $page) {
       <div class="row">
          <div class="col-sm-12 main">
  
+<?php
+
+/**
+* Remove any part of the page name after an underscore
+*
+* Pages may have subpages - these have an underscore and a subpage name.
+* Return only the main page name.
+* 
+* @param string $page
+*   The original page name
+*   
+* @return string
+*   The main page name only.
+*/
+
+function removeSubpage($page)
+{
+	// find the first underscore, if any
+	$pos = strpos($page, '_');
+	if ($pos === false) {
+		// no underscore, return the page unchanged
+		return $page;
+	}
+	
+	// return only the first part of the page name
+	return substr($page, 0, $pos) . '.php';
+}
+ 
+?>

@@ -9,25 +9,16 @@
 */
 
 require_once 'config.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
 include 'header.php';
 
 // URL parameters
 $mark = (int)$_REQUEST['mark'];
-$unmark = (int)$_REQUEST['unmark'];
 
-// Mark an item as responded, or not responded
+// Mark an item as responded to
 if ($mark) {
-	$sql = "UPDATE communications SET responded=NOW() WHERE id='".addslashes($mark)."'";
-	if (!db_db_command($sql, $error)) {
-		echo $error;
-	}
-}
-if ($unmark) {
-	$sql = "UPDATE communications SET responded=NULL WHERE id='".addslashes($unmark)."'";
-	if (!db_db_command($sql, $error)) {
-		echo $error;
-	}
+	sms_markCommunication($mark, true /* mark responded */, $error);
 }
 
 // load the number of active broadcast numbers
@@ -104,6 +95,7 @@ if (count($comms)) {
 }
 
 ?>
+<br />
 <footer><a href="https://github.com/sharett/hotline">View source code on Github</a></footer>
 <?php
 

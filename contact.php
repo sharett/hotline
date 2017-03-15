@@ -17,6 +17,12 @@ $ph = trim($_REQUEST['ph']);
 $text = trim($_REQUEST['text']);
 $mark = (int)$_REQUEST['mark'];
 $unmark = (int)$_REQUEST['unmark'];
+$hide = (int)$_REQUEST['hide'];  // if true, hide the text & call options
+
+// Normalize the phone number
+if ($ph) {
+	$ph_valid = sms_normalizePhoneNumber($ph, $error);
+}
 
 // Settings
 $page = 50; // show per page
@@ -71,12 +77,11 @@ if ($success) {
 }
 
 // display the contact's information
+if ($ph && $ph_valid) {
+	if (!$hide) {
+		// display the call & text options
 ?>
-          <h2 class="sub-header">Contact <?php echo $ph ?><?php if ($name) echo " ({$name})" ?></h2>
-<?php
-if ($ph) {
-	// display the call, text and log
-?>
+		  <h2 class="sub-header">Contact <?php echo $ph ?><?php if ($name) echo " ({$name})" ?></h2>
           <form id="text-controls" action="contact.php?ph=<?php echo urlencode($ph) ?>" method="POST">
 		   <div class="form-group">
 			<label for="text-message">Send a text message</label>
@@ -94,8 +99,19 @@ if ($ph) {
 		   <button class="btn btn-danger" id="button-hangup">Hangup</button>
 		   <h5 id="log"></h5>
 		  </form>
-                    
+<?php
+	}
+	// display log
+	if ($ph == $BROADCAST_CALLER_ID) {
+?>
+		  <h3 class="sub-header">Broadcast log (<?php echo $BROADCAST_CALLER_ID ?>)</h3>
+<?php
+	} else {
+?>
           <h3 class="sub-header">Log</h3>
+<?php
+	}
+?>
           <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or 
           unmark an item as responded to.</p>
 <?php
@@ -135,11 +151,13 @@ if (count($comms) >= $page) {
 } else {
 	// no phone number provided - prompt for one
 ?>
+		  <h2 class="sub-header">Contact</h2>
 		  <form id="choose_number" action="contact.php">
 		   <div class="form-group">
 			<label for="text-message">Phone number</label>
 			<input type="text" class="form-control" name="ph" 
-			       placeholder="<?php echo $HOTLINE_CALLER_ID ?>">
+			       placeholder="<?php echo $HOTLINE_CALLER_ID ?>"
+			       value="<?php echo $ph ?>">
  		   </div>		  
 		   <button class="btn btn-success" id="button-text">Lookup</button>
 		  </form>

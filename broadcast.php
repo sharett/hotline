@@ -13,24 +13,31 @@ include 'header.php';
 // URL parameters
 $action = $_REQUEST['action'];
 $text = trim($_REQUEST['text']);
-$numbers = $_POST['numbers'];
+$request_response = trim($_REQUEST['response']);
+$confirmed = $_REQUEST['confirm'];
+$communications_id = $_REQUEST['id'];
 
 // *** ACTIONS ***
 
 // send a text message?
 if ($action == 'broadcast') {
-	if (sendBroadcastText($text, $error, $success)) {
+	if ($confirmed == 'on') {
+		// confirmed, send the broadcast
+		if (sendBroadcastText($text, $request_response, $error, $success)) {
+			$text = '';
+			$request_response = '';
+		}
+	} else {
+		// checkbox wasn't checked
+		$error = "Please check the confirmation checkbox.";
+	}
+}
+
+// send a text message to those who responded to a previous broadcast?
+if ($action == 'broadcast_response') {
+	if (sendBroadcastResponseText($text, $communications_id, $error, $success)) {
 		$text = '';
 	}
-// import?
-} else if ($action == 'import') {
-	importNumbers($numbers, $error, $success);
-// remove?
-} else if ($action == 'remove') {
-	removeNumbers($numbers, $error, $success);
-// list?
-} else if ($action == 'list') {
-	loadNumbers($numbers_active, $numbers_disabled, $error);
 }
 
 // get the count of the active numbers
@@ -51,58 +58,94 @@ if ($success) {
 <?php
 }
 
-// display the broadcast information unless a list is requested
-if ($action != 'list') {
+// display the broadcast information
 ?>
+
+	      <script type="text/javascript">
+			// calculate the number of characters and cost to send this text
+		    function showTextLength() {
+				var count = $('#text_entry').val().trim().length;
+				var response_count = $('#request_response').val().trim().length;
+				if (response_count) {
+					count += response_count + 1;
+				}
+				var sms_count = Math.floor(count / 160) + 1;
+				var cost = sms_count * <?php echo $broadcast_count ?> * <?php echo $TWILIO_COST_PER_TEXT ?>;
+				
+				if (count == 0) {
+					$('#text_entry_length').text('(0 characters)');
+				} else {
+					$('#text_entry_length').text('(' + count + ' characters, $' + cost.toFixed(2) + ')');
+				}
+			}
+	      </script>
+	      
           <h2 class="sub-header">Broadcast</h2>
+   		  <ul class="nav nav-pills">
+			<li role="presentation" class="active"><a href="broadcast.php">Send</a></li>
+			<li role="presentation"><a href="broadcast_admin.php">Import &amp; Remove</a></li>
+			<li role="presentation"><a href="broadcast_admin.php?action=list">List</a></li>
+			<li role="presentation"><a href="contact.php?ph=<?php echo $BROADCAST_CALLER_ID ?>&hide=1">Log</a></li>
+		  </ul>
+		  <br />
+		  
           <form id="text-controls" action="broadcast.php" method="POST">
 		   <input type="hidden" name="action" value="broadcast">
 		   <div class="form-group">
-			<label for="text-message">Send a broadcast text message to <?php echo $broadcast_count ?> numbers</label>
-			<input type="text" class="form-control" name="text"
+			<label for="text_entry">Send a new broadcast text message to <?php echo $broadcast_count ?> numbers:</label>
+			<input type="text" class="form-control" name="text" 
+			       id="text_entry" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
 			       placeholder="Text message" value="<?php echo $text ?>">
- 		   </div>		  
-		   <button class="btn btn-success" id="button-text">Broadcast</button>
-		  </form>
-          
-          <h3 class="sub-header">Import</h3>
-          <form id="text-controls" action="broadcast.php" method="POST">
-		   <input type="hidden" name="action" value="import">
-		   <div class="form-group">
-			<label for="text-message">Import numbers, one per line, or comma separated</label>
-			<textarea class="form-control" name="numbers" rows="3" cols="30"><?php echo $numbers ?></textarea>
- 		   </div>		 
-		   <button class="btn btn-success" id="button-text">Import</button>
-		  </form>
-          
-          <h3 class="sub-header">Remove</h3>
-          <form id="text-controls" action="broadcast.php" method="POST">
-		   <input type="hidden" name="action" value="remove">
-		   <div class="form-group">
-			<label for="text-message">Numbers to remove, one per line, or comma separated</label>
-			<textarea class="form-control" name="numbers" rows="2" cols="30"><?php echo $numbers ?></textarea>
- 		   </div>		 
-		   <button class="btn btn-warning" id="button-text">Remove</button>
+			<p class="help-block" id="text_entry_length"></p>
+ 		   </div>
+ 		   <div class="form-group">
+			<label for="request_response">Response requested?</label>
+			<input type="text" class="form-control" name="response" 
+			       id="request_response" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
+			       placeholder="Reply yes if you can participate" 
+			       value="<?php echo $request_response ?>">
+			<p class="help-block">
+			  If set, if they reply 'yes' they'll get future texts for this broadcast.  Make sure
+			  to include the instruction to reply yes!
+			</p>
+ 		   </div>
+ 		   <div class="checkbox">
+			 <label>
+			   <input type="checkbox" name="confirm"> Confirm sending this broadcast
+			 </label>
+		   </div>
+		   <button class="btn btn-success" id="button-text">Send broadcast</button>
 		  </form>
 		  
-		  <h2 class="sub-header">List</h2>
-		  <form id="text-controls" action="broadcast.php" method="GET">
-		   <input type="hidden" name="action" value="list">
-		   <button class="btn btn-success" id="button-text">Show</button>
-		  </form>
 <?php
-} else {
-	// display the list of numbers
+// load the latest broadcast that requested a response
+sms_getBroadcastResponse($broadcast_response, $error);
+
+if ($broadcast_response) {
+	// get the list of people who have responded 'yes'
+	getBroadcastResponseConfirmed($broadcast_response['id'], $broadcast_response_confirmed, $error);
 ?>
-          <h2 class="sub-header">List</h2>
-          <form id="text-controls" action="broadcast.php" method="GET">
-		   <input type="hidden" name="action" value="">
-		   <button class="btn btn-success" id="button-text">Hide</button>
+		  <hr />
+		  <h3>Send update</h3>
+		  <p><b>For:</b> &quot;<?php echo $broadcast_response['body'] ?>&quot; (sent 
+		   <?php echo date("m/d/y h:i a", strtotime($broadcast_response['communication_time'])); ?>)</p> 
+		  <form id="broadcast-response" action="broadcast.php" method="POST">
+		   <input type="hidden" name="action" value="broadcast_response">
+		   <input type="hidden" name="id" value="<?php echo $broadcast_response['id'] ?>">
+		   <div class="form-group">
+			<label for="broadcast_text_entry"><?php echo count($broadcast_response_confirmed) ?> 
+				<?php echo (count($broadcast_response_confirmed) == 1) ? 'person has' : 'people have' ?> replied.  
+				Send them a text:</label>
+			<input type="text" class="form-control" name="text" 
+			       id="broadcast_text_entry"
+			       placeholder="Text message" value="<?php echo $text ?>">
+ 		   </div>
+		   <button class="btn btn-success" id="button-text">Send update</button>
 		  </form>
-          <h3 class="sub-header">Active</h3>
-          <p><?php echo implode(', ', $numbers_active) ?></p>
-          <h3 class="sub-header">Disabled</h3>
-          <p><?php echo implode(', ', $numbers_disabled) ?></p>          
+		  
+		  <br />
+		  <h4>Responders:</h4>
+		  <p><?php echo implode(', ', $broadcast_response_confirmed) ?></p>
 <?php
 }
 
@@ -116,6 +159,8 @@ include 'footer.php';
 * 
 * @param string $text
 *   The text to send.
+* @param string $request_response
+*   The additional text requesting a response if they want to participate further.
 * @param string &$error
 *   An error if one occurred.
 * @param string &$message
@@ -125,18 +170,30 @@ include 'footer.php';
 *   True if sent.
 */
 
-function sendBroadcastText($text, &$error, &$message)
+function sendBroadcastText($text, $request_response, &$error, &$message)
 {
 	global $BROADCAST_CALLER_ID;
 	
 	$error = '';
 	$message = '';
 
-	$text = trim($text);
+	// is there a response request?
+	if (trim($request_response)) {
+		// trim it, and put a space between the text and the response request
+		$request_response = ' ' . trim($request_response);
+	} else {
+		// it's empty, or just whitespace
+		$request_response = '';
+	}
+
+	$text = trim($text) . $request_response;
 	if (!$text) {
 		$error = "No text was provided.";
 		return false;
 	}
+	
+	//$message = "Disabled, would have sent '{$text}'.";
+	//return true;
 	
 	// load the broadcast numbers
 	$sql = "SELECT phone FROM broadcast WHERE status='active'";
@@ -157,7 +214,7 @@ function sendBroadcastText($text, &$error, &$message)
 	// store the text
 	$data = array(
 		'From' => $BROADCAST_CALLER_ID,
-		'To' => 'BROADCAST',
+		'To' => ($request_response ? 'BROADCAST_RESPONSE' : 'BROADCAST'),
 		'Body' => $text,
 		'MessageSid' => 'text'
 	);
@@ -168,239 +225,90 @@ function sendBroadcastText($text, &$error, &$message)
 }
 
 /**
-* Import a list of numbers into the database
+* Send a text to those who responded to a previous broadcast
 *
-* Each number is separated by a newline, or by commas.  Converts the numbers to E.164 format, and if
-* valid, adds to the database, and send a welcome message.
+* ...
 * 
-* @param array $numbers
-*   List of phone numbers, one on each line, or comma separated.
+* @param string $text
+*   The text to send.
+* @param int $communications_id
+*   The original broadcast text id
 * @param string &$error
-*   Errors if any occurred.
+*   An error if one occurred.
 * @param string &$message
 *   An informational message if appropriate.
 *   
 * @return bool
-*   True if any numbers were provided.
+*   True if sent.
 */
 
-function importNumbers($numbers, &$error, &$message)
+function sendBroadcastResponseText($text, $communications_id, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_WELCOME; 
+	global $BROADCAST_CALLER_ID;
 	
 	$error = '';
 	$message = '';
-	
-	// break apart the numbers into an array
-	$numbers_lines = explode("\n", trim($numbers));
-	$numbers = array();
-	foreach ($numbers_lines as $numbers_line) {
-		$numbers_each = explode(",", trim($numbers_line));
-		$numbers = array_merge($numbers, $numbers_each);
-	}
-	
-	if (count($numbers) == 0) {
-		$error = "No numbers to import.";
+
+	$text = trim($text);
+	if (!$text) {
+		$error = "No text was provided.";
 		return false;
 	}
 	
-	$success_count = 0;
-	foreach ($numbers as $number) {
-		$number = trim($number);
-		
-		// make sure the number is in E164 format
-		if (!normalizePhoneNumber($number, $n_error)) {
-			$error .= $n_error . "<br />\n";
-			continue;
-		}
+	// get the list of people who have responded 'yes'
+	if (!getBroadcastResponseConfirmed($communications_id, $numbers, $error)) {
+		return false;
+	}
+	
+	if (count($numbers) == 0) {
+		$error = "No numbers to send to.";
+		return false;
+	}
+	
+	// send the texts
+	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID)) {
+		return false;
+	}
+	
+	// store the text
+	$data = array(
+		'From' => $BROADCAST_CALLER_ID,
+		'To' => 'BROADCAST_RESPONSE_UPDATE',
+		'Body' => $text,
+		'MessageSid' => 'text'
+	);
+	sms_storeCallData($data, $error);
 
-		// is this number in the database already?
-		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!db_db_getone($sql, $number_exists, $error)) {
-			$error .= "{$number}: {$db_error}<br />\n";
-			continue;
-		}
-		if ($number_exists > 0) {
-			$error .= "{$number}: Already in the database.<br />\n";
-			continue;
-		}
-		
-		// add the number to the database
-		$sql = "INSERT INTO broadcast SET phone='".addslashes($number)."', status='active'";
-		if (!db_db_command($sql, $db_error)) {
-			$error .= "{$number}: {$db_error}<br />\n";
-			continue;
-		}
-		
-		// send a welcome message if set
-		if ($BROADCAST_WELCOME) {
-			$welcome_numbers = array($number);
-			if (!sms_send($welcome_numbers, $BROADCAST_WELCOME, $error, $BROADCAST_CALLER_ID)) {
-				$error .= "{$number}: Failed to send welcome message.<br />\n";
-				continue;
-			}
-		}
-		
-		// import successful
-		$success_count++;
-	}
-	
-	// report on the status of the import
-	$error_count = count($numbers) - $success_count;
-	$message = "Imported {$success_count} numbers successfully. ";
-	if ($error_count) {
-		$message .= "{$error_count} numbers were invalid or already in the database.";
-	}
-	
+	$message = "Text sent to " . count($numbers) . " numbers.";
 	return true;
 }
 
 /**
-* Remove a list of numbers from the database
+* Get the list of people who have responded to a particular broadcast
 *
-* Each number is separated by a newline, or by commas.  Converts the numbers to E.164 format, and if
-* valid, removes it from the database.
+* ...
 * 
-* @param array $numbers
-*   List of phone numbers, one on each line, or comma separated.
-* @param string &$error
-*   Errors if any occurred.
-* @param string &$message
-*   An informational message if appropriate.
-*   
-* @return bool
-*   True if any numbers were provided.
-*/
-
-function removeNumbers($numbers, &$error, &$message)
-{
-	$error = '';
-	$message = '';
-	
-	// break apart the numbers into an array
-	$numbers_lines = explode("\n", trim($numbers));
-	$numbers = array();
-	foreach ($numbers_lines as $numbers_line) {
-		$numbers_each = explode(",", trim($numbers_line));
-		$numbers = array_merge($numbers, $numbers_each);
-	}
-	
-	if (count($numbers) == 0) {
-		$error = "No numbers to remove.";
-		return false;
-	}
-	
-	$success_count = 0;
-	foreach ($numbers as $number) {
-		$number = trim($number);
-		
-		// make sure the number is in E164 format
-		if (!normalizePhoneNumber($number, $n_error)) {
-			$error .= $n_error . "<br />\n";
-			continue;
-		}
-
-		// is this number in the database?
-		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!db_db_getone($sql, $number_exists, $error)) {
-			$error .= "{$number}: {$db_error}<br />\n";
-			continue;
-		}
-		if ($number_exists < 1) {
-			$error .= "{$number}: Not found in the database.<br />\n";
-			continue;
-		}
-
-		// remove the number from the database
-		$sql = "DELETE FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!db_db_command($sql, $db_error)) {
-			$error .= "{$number}: {$db_error}<br />\n";
-			continue;
-		}
-		
-		// remove successful
-		$success_count++;
-	}
-	
-	// report on the status of the removal
-	$error_count = count($numbers) - $success_count;
-	$message = "Removed {$success_count} numbers successfully. ";
-	if ($error_count) {
-		$message .= "{$error_count} numbers were invalid or not in the database.";
-	}
-	
-	return true;
-}
-
-/**
-* Ensure that a phone number is in E.164 format
-*
-* Must begin with a +.  Convert 10 digit US/Canada/etc. numbers to this format.
-* 
-* @param string &$number
-*   Phone number to normalize.
+* @param int $communications_id
+*   The broadcast people have responded to
+* @param array &$numbers
+*   Set to the list of numbers of people who have responded
 * @param string &$error
 *   An error if one occurred.
 *   
 * @return bool
-*   True if valid.
+*   True unless an error occurred.
 */
 
-function loadNumbers(&$numbers_active, &$numbers_disabled, &$error)
+function getBroadcastResponseConfirmed($communications_id, &$numbers, &$error)
 {
-	// load active numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active'";
-	if (!db_db_getcol($sql, $numbers_active, $error)) {
+	// get the list of people who have responded 'yes'
+	$sql = "SELECT broadcast.phone FROM broadcast_responses ".
+		"LEFT JOIN broadcast ON broadcast.id = broadcast_responses.broadcast_id ".
+		"WHERE communications_id='".addslashes($communications_id)."' AND ".
+		" broadcast.status='active' ".
+		"ORDER BY broadcast.phone";
+	if (!db_db_getcol($sql, $numbers, $error)) {
 		return false;
-	}
-
-	// load disabled numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='disabled'";
-	if (!db_db_getcol($sql, $numbers_disabled, $error)) {
-		return false;
-	}
-	
-	return true;
-}
-
-/**
-* Ensure that a phone number is in E.164 format
-*
-* Must begin with a +.  Convert 10 digit US/Canada/etc. numbers to this format.
-* 
-* @param string &$number
-*   Phone number to normalize.
-* @param string &$error
-*   An error if one occurred.
-*   
-* @return bool
-*   True if valid.
-*/
-
-function normalizePhoneNumber(&$number, &$error)
-{
-	// remove everything but numbers and the plus sign as the first digit
-	$new_number = '';
-	for ($i = 0; $i < strlen($number); $i++) {
-		$ch = substr($number, $i, 1);
-		if (($ch == '+' && $i == 0) ||
-			($ch >= '0' && $ch <= '9')) {
-			$new_number .= $ch;
-		}
-	}
-	$number = $new_number;
-	
-	// must begin with a plus, or be at least ten digits
-	if (substr($number, 0, 1) != '+') {
-		if (strlen($number) < 10) {
-			// invalid number
-			$error = "{$number} is not valid.";
-			return false;
-		} else if (strlen($number) == 10) {
-			$number = "+1{$number}";
-		} else {
-			$number = "+{$number}";
-		}
 	}
 	
 	return true;

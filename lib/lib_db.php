@@ -70,14 +70,14 @@ function db_databaseDisconnect()
 
 function db_error($description, $severity = 'error')
 {
-    $severity = trim(addslashes($severity));
-    $description = trim(addslashes($description));
-
-    $sql = "INSERT INTO error_log SET ".
-        "severity='{$severity}',".
+	$admin_user = $_SERVER['PHP_AUTH_USER'] ? $_SERVER['PHP_AUTH_USER'] : $_SERVER['REMOTE_USER'];
+	
+    $sql = "INSERT INTO errors SET ".
+        "severity='".trim(addslashes($severity))."',".
         "source='".addslashes($_SERVER['SCRIPT_NAME'])."',".
+        "admin_user='".addslashes($admin_user)."',".
         "error_time=NOW(),".
-        "description='{$description}'";
+        "description='".trim(addslashes($description))."'";
     return db_db_command($sql, $error);
 }
 

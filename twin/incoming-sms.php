@@ -3,9 +3,13 @@
 * @file
 * Handle an incoming text message
 *
-* Look up who is available to be texted at a given date and time and sends
-* texts to them.  If a volunteer, the text is sent regardless of availability
-* and no response is given.
+* All texts are stored, and administrative messages are intercepted and
+* responded to as appropriate.
+* 
+* For hotline texts, looks up who is available to be texted now and sends
+* texts to them.
+* 
+* For broadcast texts, just store the response in the database.
 * 
 */
 
@@ -44,6 +48,58 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 } else {
 	// no, process normally
 
+	// is this a broadcast text?
+	if ($to == $BROADCAST_CALLER_ID) {
+		processBroadcastText($from, $body, $message, $error);
+	}
+	
+	// is this a hotline text?
+	if ($to == $HOTLINE_CALLER_ID) {
+		processHotlineText($from, $body, $message, $error);
+	}
+}
+
+header("content-type: text/xml");
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
+?>
+<Response>
+<?php
+// is there a reply?
+if (trim($message)) {
+?>
+  <Message><?php echo $message; ?></Message>
+<?php
+}
+?>
+</Response>
+<?php
+
+/**
+* Process a text received from the hotline
+*
+* Look up the active contacts that support texting and forward the message
+* to them.
+* 
+* @param string $from
+*   The sending phone number
+* @param string $body
+*   The body of the text
+* @param string &$message
+*   The message to respond with, if any
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless a fatal error occurred
+*/
+
+function processHotlineText($from, $body, &$message, &$error)
+{
+	// clear variables
+	$message = '';
+	$error = '';
+	$from_descriptive = $from;
+	
     // look up who is on duty
 	sms_getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error);
 
@@ -59,13 +115,13 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 
 	// identify the texter
 	if (sms_whoIsCaller($contact_name, $from, $error) && $contact_name) {
-		$from .= " ({$contact_name})";
+		$from_descriptive = " ({$contact_name})";
 	}
 
 	// was anything sent?
 	if ($from && $body) {
 		// yes
-		$forwarded = "Hotline text from {$from}: {$body}";
+		$forwarded = "Hotline text from {$from_descriptive}: {$body}";
 
 		// attempt to forward
 		if (!sms_send($numbers, $forwarded, $error)) {
@@ -84,27 +140,55 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 			$message = "Your message has been received.  Someone will respond shortly.";
 		}
 	}
+	
+	return true;
 }
 
-header("content-type: text/xml");
-echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-?>
-<Response>
-<?php
-if (trim($message)) {
-?>
-  <Message><?php echo $message; ?></Message>
-<?php
+/**
+* Process a text received from the broadcast number
+*
+* If the text is 'yes', add the sender to the broadcast update list for the
+* last broadcast that requested an update
+* 
+* @param string $from
+*   The sending phone number
+* @param string $body
+*   The body of the text
+* @param string &$message
+*   The message to respond with, if any
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless a fatal error occurred
+*/
+
+function processBroadcastText($from, $body, &$message, &$error)
+{
+	// clear variables
+	$message = '';
+	$error = '';
+	
+	// did they send 'yes' or 'y'?
+	$body_lower = trim(strtolower($body));
+	if ($body_lower == 'yes' || $body_lower == 'y') {
+		// load the latest broadcast that requested a response
+		if (sms_getBroadcastResponse($broadcast_response, $error) && $broadcast_response) {
+			// add them to the list
+			sms_addToBroadcastResponse($broadcast_response['id'], $from, $error);
+		}
+	} else {
+		// do nothing - it is added to the history for the coordinator to view
+	}
+	
+	return true;
 }
-?>
-</Response>
-<?php
 
 /**
 * Have we received a text recently from this number?
 *
 * If we've received a text from this number (to the hotline) in the past
-* week, return true.
+* week, return true.  Exclude the current text we are replying to.
 * 
 * @param string $from
 *   The phone number to check
@@ -122,8 +206,9 @@ function hasTextedRecently($from, &$error)
 	
 	$sql = "SELECT COUNT(*) FROM communications ".
 		"WHERE phone_to='".addslashes($HOTLINE_CALLER_ID)."' AND ".
-		" phone_from='".addslashes($from)."' AND ".
-		" status='text' AND communication_time > DATE_SUB(NOW(), INTERVAL 7 DAY)";
+		" phone_from='".addslashes($from)."' AND status='text' AND ".
+		" twilio_sid != '".addslashes($_REQUEST['MessageSid'])."' AND ".
+		" communication_time > DATE_SUB(NOW(), INTERVAL 7 DAY)";
 	if (!db_db_getone($sql, $recent_texts, $error)) {
 		return false;
 	}

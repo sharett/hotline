@@ -48,6 +48,20 @@ foreach ($comms as $comm) {
 	} else {
 		echo $comm['body'];
 	}
+	// media
+	if ($comm['media_urls']) {
+		// display media received
+		echo "<br />Media: ";
+		$items = explode("\n", $comm['media_urls']);
+		foreach ($items as $item) {
+			if (!trim($item)) {
+				// skip blank lines
+				continue;
+			}
+			$detail = explode("\t", $item);
+			echo '<a href="'.$detail[0].'">['.$detail[1].']</a> ';
+		}
+	}
                   ?></td>
                   <td><?php echo $comm['status']; ?></td>
                   <td>

@@ -30,6 +30,9 @@ $TWILIO_ACCOUNT_SID = '';
 // Twilio authorization token
 $TWILIO_AUTH_TOKEN = '';
 
+// Twilio cost per text
+$TWILIO_COST_PER_TEXT = 0.0075;
+
 // Optional twilio TwiML app for placing in-browser calls
 $TWILIO_TWIML_APP_SID = '';
 

@@ -230,7 +230,6 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 			$response = '';
 			return true;
 		case 'START':
-		case 'YES':
 		case 'UNSTOP':
 		case 'ON':
 		case 'ALERT':
@@ -238,6 +237,20 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 			// enable sending to this number, and respond.
 			sms_updateNumber(true /* enable */, $from, $to, $response, $error);
 			return true;
+		case 'YES':
+			// because we use this keyword for responding to broadcasts, only 
+			// respond and stop regular processing if they are not already 
+			// enabled
+			$sql = "SELECT COUNT(*) FROM broadcast WHERE ".
+				"phone = '".addslashes($from)."' AND status='active'";
+			if (db_db_getone($sql, $enabled, $error) && $enabled) {
+				// they are already active - don't treat this as an admin request
+				return false;
+			} else {
+				// they are not active or not in the list - enable them
+				sms_updateNumber(true /* enable */, $from, $to, $response, $error);
+				return true;
+			}
 		case 'OFF':
 			// disable sending to this number, and respond.
 			sms_updateNumber(false /* disable */, $from, $to, $response, $error);
@@ -318,6 +331,152 @@ function sms_updateNumber($enable, $from, $to, &$response, &$error)
 		
 		// respond with a welcome or a goodbye
 		$response .= $enable ? $BROADCAST_WELCOME : $BROADCAST_GOODBYE;
+	}
+	
+	return true;
+}
+
+/**
+* Mark a communication as responded to, or not
+*
+* Set to the current time if marked as responded, otherwise set to NULL.
+* 
+* @param int $id
+*   The communication to mark
+* @param bool $responded
+*   True to mark as responded, false to mark as not responded
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_markCommunication($id, $responded, &$error)
+{
+	$sql = "UPDATE communications ".
+		"SET responded=" . ($responded ? "NOW() " : "NULL ") .
+		"WHERE id='".addslashes($id)."'";
+	if (!db_db_command($sql, $error)) {
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+* Ensure that a phone number is in E.164 format
+*
+* Must begin with a +.  Convert 10 digit US/Canada/etc. numbers to this format.
+* 
+* @param string &$number
+*   Phone number to normalize.
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True if valid.
+*/
+
+function sms_normalizePhoneNumber(&$number, &$error)
+{
+	// remove everything but numbers and the plus sign as the first digit
+	$new_number = '';
+	for ($i = 0; $i < strlen($number); $i++) {
+		$ch = substr($number, $i, 1);
+		if (($ch == '+' && $i == 0) ||
+			($ch >= '0' && $ch <= '9')) {
+			$new_number .= $ch;
+		}
+	}
+	$number = $new_number;
+	
+	// must begin with a plus, or be at least ten digits
+	if (substr($number, 0, 1) != '+') {
+		if (strlen($number) < 10) {
+			// invalid number
+			$error = "{$number} is not a valid number.";
+			return false;
+		} else if (strlen($number) == 10) {
+			$number = "+1{$number}";
+		} else {
+			$number = "+{$number}";
+		}
+	}
+	
+	return true;
+}
+
+/**
+* Load the last broadcast text that requested a response
+*
+* ...
+* 
+* @param string &$broadcast_response
+*   Set to the latest broadcast text that requested a response
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_getBroadcastResponse(&$broadcast_response, &$error)
+{
+	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	return db_db_getrow($sql, $broadcast_response, $error);
+}
+
+/**
+* Add a phone number to a broadcast response list
+*
+* ...
+* 
+* @param int $communications_id
+*   The broadcast response they are responding to
+* @param string $from
+*   The phone number to add
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_addToBroadcastResponse($communications_id, $from, &$error)
+{
+	// look up the broadcast id for this number
+	$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($from)."' AND status='active'";
+	if (!db_db_getone($sql, $broadcast_id, $error)) {
+		return false;
+	}
+	
+	// does the broadcast id exist? (are they subscribed?)
+	if (!$broadcast_id) {
+		// no, we shouldn't have gotten here
+		return false;
+	}
+	
+	// have they already sent yes for this broadcast?
+	$sql = "SELECT COUNT(*) FROM broadcast_responses WHERE ".
+		"communications_id='".addslashes($communications_id)."' AND ".
+		"broadcast_id='".addslashes($broadcast_id)."'";
+	if (!db_db_getone($sql, $broadcast_response_id, $error)) {
+		return false;
+	}
+	
+	if ($broadcast_response_id) {
+		// yes, they are already subscribed
+		return true;
+	}
+	
+	// no, add them to the list
+	$sql = "INSERT INTO broadcast_responses SET ".
+		"communications_id='".addslashes($communications_id)."',".
+		"broadcast_id='".addslashes($broadcast_id)."'";
+	if (!db_db_command($sql, $error)) {
+		return false;
 	}
 	
 	return true;

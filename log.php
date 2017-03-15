@@ -9,6 +9,7 @@
 */
 
 require_once 'config.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
 include 'header.php';
 
@@ -22,16 +23,9 @@ $page = 50;
 
 // Mark an item as responded, or not responded
 if ($mark) {
-	$sql = "UPDATE communications SET responded=NOW() WHERE id='".addslashes($mark)."'";
-	if (!db_db_command($sql, $error)) {
-		echo $error;
-	}
-}
-if ($unmark) {
-	$sql = "UPDATE communications SET responded=NULL WHERE id='".addslashes($unmark)."'";
-	if (!db_db_command($sql, $error)) {
-		echo $error;
-	}
+	sms_markCommunication($mark, true /* mark responded */, $error);
+} else if ($unmark) {
+	sms_markCommunication($unmark, false /* mark not responded */, $error);
 }
 
 // Communications
