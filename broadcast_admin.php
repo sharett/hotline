@@ -135,7 +135,7 @@ function importNumbers($numbers, &$error, &$message)
 
 		// is this number in the database already?
 		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!db_db_getone($sql, $number_exists, $error)) {
+		if (!db_db_getone($sql, $number_exists, $db_error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
 		}
@@ -221,7 +221,7 @@ function removeNumbers($numbers, &$error, &$message)
 
 		// is this number in the database?
 		$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($number)."'";
-		if (!db_db_getone($sql, $broadcast_id, $error)) {
+		if (!db_db_getone($sql, $broadcast_id, $db_error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
 		}

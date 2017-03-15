@@ -20,6 +20,7 @@ if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
             <table class="table table-striped">
               <thead>
                 <tr>
+				  <th>id</th>
                   <th>language</th>
                   <th>prompt</th>
                   <th>twilio code</th>
@@ -30,6 +31,7 @@ if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
 foreach ($languages as $language) {
 ?>
                 <tr>
+				  <td><?php echo $language['id']?></td>
                   <td><?php echo $language['language']?></td>
                   <td><?php echo $language['prompt']?></td>
                   <td><?php echo $language['twilio_code']?></td>

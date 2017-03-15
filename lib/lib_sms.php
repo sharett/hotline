@@ -380,22 +380,23 @@ function sms_markCommunication($id, $responded, &$error)
 
 function sms_normalizePhoneNumber(&$number, &$error)
 {
+	$original_number = $number;
+	$number = '';
+	
 	// remove everything but numbers and the plus sign as the first digit
-	$new_number = '';
-	for ($i = 0; $i < strlen($number); $i++) {
-		$ch = substr($number, $i, 1);
+	for ($i = 0; $i < strlen($original_number); $i++) {
+		$ch = substr($original_number, $i, 1);
 		if (($ch == '+' && $i == 0) ||
 			($ch >= '0' && $ch <= '9')) {
-			$new_number .= $ch;
+			$number .= $ch;
 		}
 	}
-	$number = $new_number;
 	
 	// must begin with a plus, or be at least ten digits
 	if (substr($number, 0, 1) != '+') {
 		if (strlen($number) < 10) {
 			// invalid number
-			$error = "{$number} is not a valid number.";
+			$error = "{$original_number} is not a valid number.";
 			return false;
 		} else if (strlen($number) == 10) {
 			$number = "+1{$number}";

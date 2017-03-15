@@ -62,7 +62,7 @@ It is not production ready and is very much in progress.
 
 The broadcast interface supports sending, importing and removing numbers.  When importing numbers, each one is sent a welcome message with instructions about how to stop receiving texts.
 
-The hotline interface supports viewing active staff (those signed up to receive calls), viewing call/text logs and language information, sending texts and placing phone calls.  You can also mark texts and voicemails as responded to or not.  All editing of the volunteers information and times they are accepting calls is done by editing the database directly.
+The hotline interface supports viewing and editing active staff (those signed up to receive calls), viewing call/text logs and language information, sending texts and placing phone calls.  You can also mark texts and voicemails as responded to or not.
 
 ## Hotline flow
 
@@ -93,7 +93,6 @@ Text messages:
 
 * Consider a template library to separate the logic from the presentation.
 * Consider an authentication method other than HTTP basic.
-* Consider an interface to edit hotline staff (contacts) and their available times.
 
 ## License
 
