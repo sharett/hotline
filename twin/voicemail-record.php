@@ -12,6 +12,8 @@ require_once $LIB_BASE . 'lib_sms.php';
 
 db_databaseConnect();
 
+$response = new Twilio\Twiml();
+
 // store the voicemail
 $_REQUEST['status'] = 'voicemail';
 $_REQUEST['Body'] = $_REQUEST['RecordingUrl'];
@@ -21,32 +23,33 @@ sms_storeCallData($_REQUEST, $error);
 $url = $_REQUEST['RecordingUrl'];
 $duration = $_REQUEST['RecordingDuration'];
 $from = $_REQUEST['From'];
+$language_id = $_REQUEST['language_id'];
 
-header("content-type: text/xml");
-echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-?>
-<Response>
-<?php
+// load language data
+sms_loadLanguage($language_id, $language, $error);
+
 if (!$url) {
-	?>
-	<Say voice="alice">An error occurred - your voicemail was not received. Goodbye.</Say>
-	<?php
+	// no voicemail!
+	$response->say('An error occurred - your voicemail was not received. Goodbye.',
+		array('voice' => 'alice')
+	);
 } else {
 	// send an text alerting the volunteers of a voicemail
 	if (!alertVolunteersOfVoicemail($from, $url, $duration, $error)) {
-		?>
-		<Say voice="alice">An error occurred - your voicemail was not received. Goodbye.</Say>
-		<?php
+		$response->say('An error occurred - your voicemail was not received. Goodbye.',
+			array('voice' => 'alice')
+		);
 	} else {
-		?>
-		<Say voice="alice"><?php echo $HOTLINE_VOICEMAIL_RECEIVED ?></Say>
-		<?php
+		// voicemail was received successfully
+		$response->say($language['voicemail_received'],
+			array('voice' => 'alice', 'language' => $language['twilio_code'])
+		);
 	}
 }	
-?>
-</Response>
 
-<?php
+// send the response
+echo $response;
+
 db_databaseDisconnect();
 
 

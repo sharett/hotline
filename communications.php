@@ -23,7 +23,8 @@
 <?php
 foreach ($comms as $comm) {
 	$not_responded = !$comm['responded'] && $comm['phone_to'] == $HOTLINE_CALLER_ID && 
-	    ($comm['status'] == 'text' || $comm['status'] == 'voicemail');
+	    ($comm['status'] == 'text' || $comm['status'] == 'voicemail') && 
+	    strtolower($comm['body']) != 'off' && strtolower($comm['body']) != 'on';
 ?>
                 <tr <?php if ($not_responded) echo 'class="warning"' ?>>
                   <td><?php echo date("m/d/y h:i a", strtotime($comm['communication_time'])); ?></td>

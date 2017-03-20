@@ -69,9 +69,7 @@ CREATE TABLE `communications` (
 CREATE TABLE `contacts` (
   `id` int(11) UNSIGNED NOT NULL,
   `contact_name` varchar(50) NOT NULL,
-  `phone` varchar(25) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `notes` text NOT NULL
+  `phone` varchar(25) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------

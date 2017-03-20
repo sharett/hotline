@@ -7,13 +7,34 @@
 */
 
 require_once '../config.php';
+require_once $LIB_BASE . 'lib_sms.php';
 
-header("content-type: text/xml");
-?>
-<?xml version="1.0" encoding="UTF-8"?>
-<Response>
- <Gather action="handle-screen.php" numDigits="1" timeout="15">
-  <Say voice="alice"><?php echo $HOTLINE_VOLUNTEER_PROMPT ?></Say>
- </Gather>
- <Hangup/>
-</Response>
+db_databaseConnect();
+
+// URL parameters
+$language_id = (int)$_REQUEST['Digits'];
+
+// load the language data
+sms_loadLanguage($language_id, $language, $error);
+
+$response = new Twilio\Twiml();
+
+// wait for a digit to be pressed
+$gather = $response->gather(array(
+	'action' => 'handle-screen.php',
+	'numDigits' => 1,
+	'timeout' => 15,
+	)
+);
+
+// say the hotline staff prompt
+$gather->say($HOTLINE_STAFF_PROMPT_1 . $language['language'] . $HOTLINE_STAFF_PROMPT_2,
+	array('voice' => 'alice')
+);
+
+// hang up if it times out
+$response->hangup();
+
+echo $response;
+
+db_databaseDisconnect();

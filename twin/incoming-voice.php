@@ -21,23 +21,33 @@ if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
     // error!
 }
 
-db_databaseDisconnect();
+$response = new Twilio\Twiml();
 
-header("content-type: text/xml");
-echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-?>
-<Response>
- <Gather action="incoming-voice-dial.php" numDigits="1" timeout="15">
-  <Say voice="alice"><?php echo $HOTLINE_INTRO ?></Say>
-<?php
+// wait for a digit to be pressed
+$gather = $response->gather(array(
+	'action' => 'incoming-voice-dial.php',
+	'numDigits' => 1,
+	'timeout' => 15,
+	)
+);
+
+// say the hotline intro
+$gather->say($HOTLINE_INTRO,
+	array('voice' => 'alice')
+);
+
+// and each of the language options
 foreach ($languages as $language) {
-?>
-  <Say voice="alice" language="<?php echo $language['twilio_code'] ?>"><?php echo $language['prompt'] ?></Say>
-<?php
+	$gather->say($language['prompt'],
+		array('voice' => 'alice', 'language' => $language['twilio_code'])
+	);
 }
-?>
- </Gather>
- <Redirect method="GET">
-  incoming-voice-dial.php?Digits=TIMEOUT
- </Redirect>
-</Response>
+
+// and handle a timeout
+$response->redirect('incoming-voice-dial.php?Digits=TIMEOUT',
+	array('method' => 'GET')
+);
+
+echo $response;
+
+db_databaseDisconnect();

@@ -51,10 +51,10 @@ $HOTLINE_CALLER_ID = '+1NXXNXXXXXX';
 // Hotline prompts
 $HOTLINE_INTRO = $HOTLINE_NAME . ' hotline. ';
 $HOTLINE_GOODBYE = 'Goodbye.';
-$HOTLINE_VOLUNTEER_PROMPT = $HOTLINE_NAME . ' hotline call. Press 1 to accept.';
+$HOTLINE_STAFF_PROMPT_1 = $HOTLINE_NAME . ' hotline call in '; // language will be added here
+$HOTLINE_STAFF_PROMPT_2 = '. Press 1 to accept.';
 $HOTLINE_CONNECTING_TO_CALLER = 'Connecting you to the caller.';
-$HOTLINE_NO_ANSWER = 'No one is available to answer.  Please leave a message.';
-$HOTLINE_VOICEMAIL_RECEIVED = 'Your voicemail has been received.  Goodbye.';
+$HOTLINE_CALLER_HUNG_UP = 'The caller hung up or someone else took the call.  Goodbye.';
 
 // Database setup
 $HOTLINE_DB_DATABASE = '';

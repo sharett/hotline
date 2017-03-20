@@ -31,7 +31,8 @@ $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, cont
 	"LEFT JOIN contacts AS contacts_from ON contacts_from.phone = communications.phone_from ".
 	"LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
 	"WHERE responded IS NULL AND (status = 'text' OR status = 'voicemail') AND ".
-	"	phone_to = '".addslashes($HOTLINE_CALLER_ID) . "' ".
+	"	phone_to = '".addslashes($HOTLINE_CALLER_ID) . "' AND ".
+	"   LOWER(body) != 'off' AND LOWER(body) != 'on' ".
 	"ORDER BY communication_time";
 if (!db_db_query($sql, $comms, $error)) {
 	echo $error;

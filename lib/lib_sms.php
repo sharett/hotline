@@ -96,10 +96,147 @@ function sms_send($numbers, $text, &$error, $from = '')
                       'body' => $text)
 			);
         } catch (Services_Twilio_RestException $e) {
-            $error .= $phone . ": " . $e->getMessage() . "\n";
+            $error .= $number . ": " . $e->getMessage() . "\n";
         }
 	}
 
+	return true;
+}
+
+/**
+* Place calls to a list of numbers
+*
+* ...
+* 
+* @param array $numbers
+*   Array of phone numbers to call
+* @param string $url
+*   The URL for Twilio to request when connected
+* @param string $from
+*   The number to place the call from.  Defaults to the $HOTLINE_CALLER_ID constant.
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True - errors reported in $error parameter.
+*/
+
+function sms_placeCalls($numbers, $url, $from, &$error)
+{
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
+	
+	// default from number
+	if (!$from) {
+		$from = $HOTLINE_CALLER_ID;
+	}
+	
+	// create a Twilio client
+	$client = new Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
+
+	// place the calls
+	$error = '';
+	foreach ($numbers as $number) {
+        try {
+			// don't initiate a call if another with the same to and from numbers
+			// is in progress
+			
+			// create the call			
+			$call = $client->calls->create($number, $from,
+				array(
+					"url" => $url,
+					"method" => "POST",
+					//"statusCallbackMethod" => "POST",
+					//"statusCallback" => "https://www.myapp.com/events",
+					//"statusCallbackEvent" => array(
+					//	"initiated", "ringing", "answered", "completed"
+					//)
+				)
+			);
+        } catch (Services_Twilio_RestException $e) {
+            $error .= $number . ": " . $e->getMessage() . "\n";
+        }
+	}
+
+	return true;
+}
+
+/**
+* Get an array of active calls
+*
+* Calls with the statuses queued, ringing or in-progress are considered
+* active.
+* 
+* @param string $phone
+*   The phone number that must be the from or to number in the calls
+* @param array &$calls
+*   Filled with the array of active calls
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True - errors reported in $error parameter.
+*/
+
+function sms_getActiveCalls($phone, &$calls, &$error)
+{
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN;
+	
+	// create a Twilio client
+	$client = new Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
+
+	// retrieve the calls
+	$error = '';
+	$calls = array();
+
+	_sms_getCallInfo(array("status" => "queued", "to" => $phone), $client, $calls, $error);
+	_sms_getCallInfo(array("status" => "ringing", "to" => $phone), $client, $calls, $error);
+	_sms_getCallInfo(array("status" => "in-progress", "to" => $phone), $client, $calls, $error);
+	_sms_getCallInfo(array("status" => "queued", "from" => $phone), $client, $calls, $error);
+	_sms_getCallInfo(array("status" => "ringing", "from" => $phone), $client, $calls, $error);
+	_sms_getCallInfo(array("status" => "in-progress", "from" => $phone), $client, $calls, $error);
+
+	return true;
+}
+
+/**
+* Helper function to get the search for specific call information
+*
+* ...
+* 
+* @param array $read_array
+*   The parameters to search for
+* @param object &$client
+*   The Twilio client to search with
+* @param array &$calls
+*   The array of active calls to be added to
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred
+*/
+
+function _sms_getCallInfo($read_array, &$client, &$calls, &$error)
+{
+	try {
+		// load the calls
+		$calls_from = $client->calls->read($read_array);
+		
+		// add each to the $calls array, formatting relevant information
+		foreach ($calls_from as $call) {
+			$calls[] = array("From" => $call->from,
+				"To" => $call->to,
+				"Status" => $call->status,
+				"StartTime" => $call->startTime->format("Y-m-d H:i:s O"),
+				"EndTime" => $call->endTime->format("Y-m-d H:i:s O"),
+			);
+		}
+	} catch (Services_Twilio_RestException $e) {
+		// catch errors
+		$error .= $e->getMessage() . "\n";
+		return false;
+	}
+	
 	return true;
 }
 
@@ -477,6 +614,47 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 		"communications_id='".addslashes($communications_id)."',".
 		"broadcast_id='".addslashes($broadcast_id)."'";
 	if (!db_db_command($sql, $error)) {
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+* Load a language table entry
+*
+* ...
+* 
+* @param int $id
+*   The language id to load
+* @param array &$language
+*   Set to the loaded language.
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_loadLanguage($id, &$language, &$error)
+{	
+	// first, does the id exist?
+	if ($id) {
+		$sql = "SELECT COUNT(*) FROM languages WHERE id='". addslashes($id) . "'";
+		if (!db_db_getone($sql, $exists, $error)) {
+			return false;
+		}
+		
+		if (!$exists) {
+			$id = 1;  // default to the first language
+		}
+	} else {
+		$id = 1;
+	}
+	
+	// now load the record
+	$sql = "SELECT * FROM languages WHERE id='". addslashes($id) . "'";
+	if (!db_db_getrow($sql, $language, $error)) {
 		return false;
 	}
 	

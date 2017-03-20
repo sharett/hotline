@@ -59,20 +59,17 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 	}
 }
 
-header("content-type: text/xml");
-echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
-?>
-<Response>
-<?php
+$response = new Twilio\Twiml();
+
 // is there a reply?
 if (trim($message)) {
-?>
-  <Message><?php echo $message; ?></Message>
-<?php
+	$response->message($message);
 }
-?>
-</Response>
-<?php
+
+echo $response;
+
+db_databaseDisconnect();
+
 
 /**
 * Process a text received from the hotline

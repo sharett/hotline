@@ -73,8 +73,46 @@ foreach ($contacts as $contact) {
             </table>
           </div>
 
-
 <?php
+sms_getActiveCalls($HOTLINE_CALLER_ID, $calls, $error);
+if (count($calls)) {
+?>          
+        <h3 class="sub-header">Active calls</h3>
+		  <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>from</th>
+                  <th>to</th>
+                  <th>status</th>
+                  <th>timing</th>
+                </tr>
+              </thead>
+              <tbody>
+<?php
+foreach ($calls as $call) {
+	$duration = strtotime($call['EndTime']) - strtotime($call['StartTime']);
+?>
+                <tr>
+                  <td><?php
+                  echo '<a href="contact.php?ph=' . urlencode($call['From']) . '">' . $call['From'] . '</a>';
+                  ?></td>
+                  <td><?php
+                  echo '<a href="contact.php?ph=' . urlencode($call['To']) . '">' . $call['To'] . '</a>';
+                  ?></td>
+                  <td><?php echo $call['Status']?></td>
+                  <td><?php echo date("m/d/y h:i a", strtotime($call['StartTime'])) . 
+								 ' (' . $duration . ' seconds)' ?></td>
+                </tr>
+<?php
+}
+?>
+              </tbody>
+            </table>
+          </div>
+<?php
+}
+
 // All hotline staff
 if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $error)) {
     echo $error;
@@ -88,7 +126,7 @@ if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $err
                 <tr>
                   <th>name</th>
                   <th>phone</th>
-                  <th>call times/notes</th>
+                  <th>call times</th>
                 </tr>
               </thead>
               <tbody>

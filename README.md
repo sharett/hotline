@@ -70,12 +70,12 @@ Voice calls:
 
 * Says: “($HOTLINE_NAME) hotline.  Press 1 for English. Para español oprima dos.”
 * Wait 15 seconds or for a language to be chosen. On timeout, defaults to English.
-* Rings to the caller, and simultaneously calls all available hotline staff, for 40 seconds.
+* Rings to the caller, and simultaneously calls all available hotline staff, for 30 seconds.
 * Any hotline staff who answer hear: 
   * “($HOTLINE_NAME) hotline call.  Press 1 to accept.”
   * If they press 1: “Connecting you to the caller.”
   * Otherwise, “Goodbye.” and hangs up.
-* If any hotline staff accept the call, they are connected to the caller.  Maximum call length 1 hour.
+* If any hotline staff accept the call, they are connected to the caller.
 * If no one answers in time, the caller hears: “No one is available to answer.  Please leave a message.”  Maximum length of message, 5 minutes.
 * If a voicemail is left, all on-call staff are alerted via a text message.
 
