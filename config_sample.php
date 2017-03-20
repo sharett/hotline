@@ -53,6 +53,7 @@ $HOTLINE_INTRO = $HOTLINE_NAME . ' hotline. ';
 $HOTLINE_GOODBYE = 'Goodbye.';
 $HOTLINE_STAFF_PROMPT_1 = $HOTLINE_NAME . ' hotline call in '; // language will be added here
 $HOTLINE_STAFF_PROMPT_2 = '. Press 1 to accept.';
+$HOTLINE_STRAIGHT_TO_VOICEMAIL= 'or press 0 for voicemail';
 $HOTLINE_CONNECTING_TO_CALLER = 'Connecting you to the caller.';
 $HOTLINE_CALLER_HUNG_UP = 'The caller hung up or someone else took the call.  Goodbye.';
 

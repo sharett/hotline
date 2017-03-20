@@ -43,7 +43,7 @@ foreach ($languages as $language) {
 	);
 }
 
-$gather->say("or press 0 for voicemail");
+$gather->say($HOTLINE_STRAIGHT_TO_VOICEMAIL, array('voice' => 'alice'));
 
 // and handle a timeout
 $response->redirect('incoming-voice-dial.php?Digits=TIMEOUT',
