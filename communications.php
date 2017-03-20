@@ -21,6 +21,9 @@
               </thead>
               <tbody>
 <?php
+// is the number to dial from specified?
+$from_url = $from ? ("&from=" . urlencode($from)) : '';
+
 foreach ($comms as $comm) {
 	$not_responded = !$comm['responded'] && $comm['phone_to'] == $HOTLINE_CALLER_ID && 
 	    ($comm['status'] == 'text' || $comm['status'] == 'voicemail') && 
@@ -30,14 +33,14 @@ foreach ($comms as $comm) {
                   <td><?php echo date("m/d/y h:i a", strtotime($comm['communication_time'])); ?></td>
                   <td><?php 
     // the "from" number
-    echo '<a href="contact.php?ph=' . urlencode($comm['phone_from']) . '">' . $comm['phone_from'] . '</a>';
+    echo '<a href="contact.php?ph=' . urlencode($comm['phone_from']) . $from_url . '">' . $comm['phone_from'] . '</a>';
     if ($comm['from_contact']) {
 		echo " ({$comm['from_contact']})";
 	}
                   ?></td>
                   <td><?php 
     // the "to" number
-	echo '<a href="contact.php?ph=' . urlencode($comm['phone_to']) . '">' . $comm['phone_to'] . '</a>';
+	echo '<a href="contact.php?ph=' . urlencode($comm['phone_to']) . $from_url . '">' . $comm['phone_to'] . '</a>';
 	if ($comm['to_contact']) {
 		echo " ({$comm['to_contact']})";
 	}

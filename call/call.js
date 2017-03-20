@@ -53,9 +53,11 @@ $(function () {
 
   // bind the "Call" button
   document.getElementById('button-call').onclick = function () {
-    // get the phone number to connect the call to
+    // get the phone number to connect the call to, and the number
+    // it should come from
     var params = {
-      To: document.getElementById('phone-number').value
+      To: document.getElementById('phone-number').value,
+      From: document.getElementById('call-from').value
     };
 
     // write this call to the database

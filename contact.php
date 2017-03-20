@@ -14,6 +14,7 @@ include 'header.php';
 // URL parameters
 $start = (int)$_REQUEST['s'];
 $ph = trim($_REQUEST['ph']);
+$from = $_REQUEST['from'];
 $text = trim($_REQUEST['text']);
 $mark = (int)$_REQUEST['mark'];
 $unmark = (int)$_REQUEST['unmark'];
@@ -22,6 +23,16 @@ $hide = (int)$_REQUEST['hide'];  // if true, hide the text & call options
 // Normalize the phone number
 if ($ph) {
 	$ph_valid = sms_normalizePhoneNumber($ph, $error);
+}
+
+// if the phone number is the broadcast number, make that the from number
+if ($ph == $BROADCAST_CALLER_ID) {
+	$from = $BROADCAST_CALLER_ID;
+}
+
+// ensure that the "from" number is hotline or broadcast.  Default to hotline.
+if ($from != $BROADCAST_CALLER_ID) {
+	$from = $HOTLINE_CALLER_ID;
 }
 
 // Settings
@@ -44,10 +55,10 @@ if ($unmark) {
 // send a text message?
 if ($ph && $text) {
 	$numbers = array($ph);
-	if (sms_send($numbers, $text, $error)) {
+	if (sms_send($numbers, $text, $error, $from)) {
 		// store the text
 		$data = array(
-			'From' => $HOTLINE_CALLER_ID,
+			'From' => $from,
 			'To' => $ph,
 			'Body' => $text,
 			'MessageSid' => 'text'
@@ -82,7 +93,9 @@ if ($ph && $ph_valid) {
 		// display the call & text options
 ?>
 		  <h2 class="sub-header">Contact <?php echo $ph ?><?php if ($name) echo " ({$name})" ?></h2>
-          <form id="text-controls" action="contact.php?ph=<?php echo urlencode($ph) ?>" method="POST">
+          <form id="text-controls" action="contact.php?ph=<?php echo urlencode($ph) ?>&from=<?php echo urlencode($from) ?>"
+                method="POST">
+           <p>(from <?php echo $from ?>)</p>
 		   <div class="form-group">
 			<label for="text-message">Send a text message</label>
 			<input type="text" class="form-control" name="text"
@@ -94,6 +107,7 @@ if ($ph && $ph_valid) {
           <br />
           <form id="call-controls" style="display: none;" onsubmit="return false;">
 		   <input type="hidden" id="phone-number" value="<?php echo $ph ?>">
+		   <input type="hidden" id="call-from" value="<?php echo $from ?>">
  		   <label>Place an in-browser call</label><br />
 		   <button class="btn btn-success" id="button-call">Call</button>
 		   <button class="btn btn-danger" id="button-hangup">Hangup</button>
@@ -153,6 +167,15 @@ if (count($comms) >= $page) {
 ?>
 		  <h2 class="sub-header">Contact</h2>
 		  <form id="choose_number" action="contact.php">
+		   <div class="form-group">
+			<label for="text-message">Call/text from</label>
+			<select class="form-control" name="from">
+			 <option value="<?php echo $HOTLINE_CALLER_ID ?>" 
+				<?php if ($from == $HOTLINE_CALLER_ID) { echo "selected"; } ?>>Hotline - <?php echo $HOTLINE_CALLER_ID ?></option>
+			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
+				<?php if ($from == $BROADCAST_CALLER_ID) { echo "selected"; } ?>>Broadcast - <?php echo $BROADCAST_CALLER_ID ?></option>
+			</select>
+ 		   </div>		  
 		   <div class="form-group">
 			<label for="text-message">Phone number</label>
 			<input type="text" class="form-control" name="ph" 
