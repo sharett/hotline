@@ -15,6 +15,7 @@ require_once $LIB_BASE . 'lib_sms.php';
 db_databaseConnect();
 
 // URL parameters
+$digit = $_REQUEST['Digits'];
 $language_id = (int)$_REQUEST['Digits'];
 $from = $_REQUEST['From'];
 $call_status = $_REQUEST['CallStatus'];
@@ -23,30 +24,35 @@ $response = new Twilio\Twiml();
 
 // is the call still active?
 if ($call_status != 'completed') {
-	// load the language data
-	sms_loadLanguage($language_id, $language, $error);
-	$language_id = $language['id'];
+    // digit 0 indicates that the caller wants to go straight to voicemail
+    if ($digit == '0') {
+        $response->redirect('voicemail.php?language_id=0');
+    } else {
+		// load the language data
+		sms_loadLanguage($language_id, $language, $error);
+		$language_id = $language['id'];
 
-	// get the staff's phone numbers to call
-	getNumbersToCall($from, $language_id, $numbers, $error);
-	
-	// anyone to call?
-	if (count($numbers)) {
-		// initiate calls to each of these staff
-		sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id, 
-			$HOTLINE_CALLER_ID, $error);
-
-		// enqueue the caller
-		$response->enqueue('hotline',
-			array('waitUrl' => $TWILIO_INTERFACE_WEBROOT . 'incoming-voice-queue.php?language_id=' . $language_id)
-		);
+		// get the staff's phone numbers to call
+		getNumbersToCall($from, $language_id, $numbers, $error);
 		
-		// fall through to voicemail when leaving the queue
-		$response->redirect('voicemail.php?language_id=' . $language_id);
-	} else {
-		// no one to call, redirect to voicemail now
-		$response->redirect('voicemail.php?language_id=' . $language_id);
-	}
+		// anyone to call?
+		if (count($numbers)) {
+			// initiate calls to each of these staff
+			sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id, 
+				$HOTLINE_CALLER_ID, $error);
+
+			// enqueue the caller
+			$response->enqueue('hotline',
+				array('waitUrl' => $TWILIO_INTERFACE_WEBROOT . 'incoming-voice-queue.php?language_id=' . $language_id)
+			);
+			
+			// fall through to voicemail when leaving the queue
+			$response->redirect('voicemail.php?language_id=' . $language_id);
+		} else {
+			// no one to call, redirect to voicemail now
+			$response->redirect('voicemail.php?language_id=' . $language_id);
+		}
+    }
 }
 
 echo $response;
