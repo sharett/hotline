@@ -15,7 +15,7 @@ require_once $LIB_BASE . 'lib_sms.php';
 db_databaseConnect();
 
 // URL parameters
-$language_id = (int)$_REQUEST['Digits'];
+$language_digit = (int)$_REQUEST['Digits'];
 $from = $_REQUEST['From'];
 $call_status = $_REQUEST['CallStatus'];
 
@@ -24,8 +24,8 @@ $response = new Twilio\Twiml();
 // is the call still active?
 if ($call_status != 'completed') {
 	// load the language data
-	sms_loadLanguage($language_id, $language, $error);
-	$language_id = $language['id'];
+	sms_loadLanguage($language_digit, $language, $error);
+	$language_id = (int)$language['id'];
 
 	// get the staff's phone numbers to call
 	getNumbersToCall($from, $language_id, $numbers, $error);
