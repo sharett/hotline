@@ -15,6 +15,7 @@ require_once $LIB_BASE . 'lib_sms.php';
 db_databaseConnect();
 
 // URL parameters
+$digit = $_REQUEST['Digits'];
 $language_id = (int)$_REQUEST['Digits'];
 $from = $_REQUEST['From'];
 $call_status = $_REQUEST['CallStatus'];
@@ -23,6 +24,9 @@ $response = new Twilio\Twiml();
 
 // is the call still active?
 if ($call_status != 'completed') {
+    if ($digit == 0) {
+        $response->redirect('voicemail.php?language_id=0');
+    } else {
 	// load the language data
 	sms_loadLanguage($language_id, $language, $error);
 	$language_id = $language['id'];
@@ -47,6 +51,7 @@ if ($call_status != 'completed') {
 		// no one to call, redirect to voicemail now
 		$response->redirect('voicemail.php?language_id=' . $language_id);
 	}
+    }
 }
 
 echo $response;

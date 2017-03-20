@@ -43,6 +43,8 @@ foreach ($languages as $language) {
 	);
 }
 
+$gather->say("or press 0 for voicemail");
+
 // and handle a timeout
 $response->redirect('incoming-voice-dial.php?Digits=TIMEOUT',
 	array('method' => 'GET')
