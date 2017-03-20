@@ -1,5 +1,10 @@
+
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
+
+--
+-- Database: `sanctuary`
+--
 
 -- --------------------------------------------------------
 
@@ -97,6 +102,8 @@ CREATE TABLE `languages` (
   `id` int(11) UNSIGNED NOT NULL,
   `language` varchar(25) NOT NULL,
   `prompt` varchar(255) NOT NULL,
+  `voicemail` varchar(255) NOT NULL DEFAULT '',
+  `voicemail_received` varchar(255) NOT NULL DEFAULT '',
   `twilio_code` varchar(15) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Languages the hotline supports';
 
@@ -104,9 +111,9 @@ CREATE TABLE `languages` (
 -- Dumping data for table `languages`
 --
 
-INSERT INTO `languages` (`id`, `language`, `prompt`, `twilio_code`) VALUES
-(1, 'English', 'Press 1 for English.', 'en-US'),
-(2, 'Spanish', 'Para espa&#241;ol oprima dos.', 'es-MX');
+INSERT INTO `languages` (`id`, `language`, `prompt`, `voicemail`, `voicemail_received`, `twilio_code`) VALUES
+(1, 'English', 'Press 1 for English.', 'No one is available to answer.  Please leave a message.', 'Your voicemail has been received.  Goodbye.', 'en-US'),
+(2, 'Spanish', 'Para espa&#241;ol oprima dos.', 'Nadie esta disponible. Favor de dejar un mensaje.', 'Tu correo de voz se ha recibido. Adi&oacute;s.', 'es-MX');
 
 --
 -- Indexes for dumped tables
@@ -165,37 +172,37 @@ ALTER TABLE `languages`
 -- AUTO_INCREMENT for table `broadcast`
 --
 ALTER TABLE `broadcast`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 --
 -- AUTO_INCREMENT for table `broadcast_responses`
 --
 ALTER TABLE `broadcast_responses`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 --
 -- AUTO_INCREMENT for table `call_times`
 --
 ALTER TABLE `call_times`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 --
 -- AUTO_INCREMENT for table `communications`
 --
 ALTER TABLE `communications`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=358;
 --
 -- AUTO_INCREMENT for table `contacts`
 --
 ALTER TABLE `contacts`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 --
 -- AUTO_INCREMENT for table `errors`
 --
 ALTER TABLE `errors`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 --
 -- AUTO_INCREMENT for table `languages`
 --
 ALTER TABLE `languages`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 --
 -- Constraints for dumped tables
 --
