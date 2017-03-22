@@ -12,10 +12,10 @@ require_once $LIB_BASE . 'lib_sms.php';
 db_databaseConnect();
 
 // URL parameters
-$language_digit = (int)$_REQUEST['Digits'];
+$language_id = (int)$_REQUEST['Digits'];
 
 // load the language data
-sms_loadLanguage($language_digit, $language, $error);
+sms_loadLanguage_by_id($language_id, $language, $error);
 
 $response = new Twilio\Twiml();
 
