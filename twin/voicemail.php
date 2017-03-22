@@ -21,9 +21,11 @@ $language_id = $_REQUEST['language_id'];
 sms_loadLanguage_by_id($language_id, $language, $error);
 
 // no one available to answer
-$response->say($language['voicemail'], 
-	array('voice' => 'alice', 'language' => $language['twilio_code'])
-);
+if ($language_id != 0) {
+    $response->say($language['voicemail'], 
+        array('voice' => 'alice', 'language' => $language['twilio_code'])
+    );
+}
 
 // record for up to 5 minutes
 $response->record(

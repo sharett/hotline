@@ -49,7 +49,7 @@ It is not production ready and is very much in progress.
    https://username:password@(web address, example: hotline.hotline.org)/twin/incoming-voice.php
   * For messaging (SMS), use:
   
-   https://username:password@(web address, example: hotline.hotline.org)/twin/incoming-sms-php
+   https://username:password@(web address, example: hotline.hotline.org)/twin/incoming-sms.php
 
 * Optional.  To enable in-browser outbound calling, create a TwiML app (under Phone numbers, Tools) with a voice request URL of:
 
