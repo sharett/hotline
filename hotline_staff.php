@@ -3,7 +3,7 @@
 * @file
 * Staff
 *
-* Display hotline staff on duty now, and all staff
+* Display and edit hotline staff on duty now, and all staff
 * 
 */
 
@@ -52,9 +52,20 @@ if ($success) {
 <?php
 }
 
+?>
+		<h2 class="sub-header">Hotline</h2>
+   		  <ul class="nav nav-pills">
+			<li role="presentation" class="active"><a href="hotline_staff.php">Staff</a></li>
+			<li role="presentation"><a href="hotline_blocks.php">Blocks</a></li>
+			<li role="presentation"><a href="hotline_languages.php">Languages</a></li>
+			<li role="presentation"><a href="contact.php?ph=<?php echo $HOTLINE_CALLER_ID ?>&hide=1">Log</a></li>
+		  </ul>
+		  <br />
+<?php
+
 // On duty now
 ?>
-        <h2 class="sub-header">On duty now</h2>
+        <h3 class="sub-header">On duty now</h3>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead>
@@ -127,7 +138,7 @@ if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $err
 }
 
 ?>
-          <h2 class="sub-header">Staff</h2>
+          <h3 class="sub-header">Staff</h3>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead>
@@ -156,7 +167,7 @@ foreach ($contacts as $contact) {
     // allow removal of staff entry if all call time records are removed
     if (count($call_times) == 0) {
 ?>
-		<a href="staff.php?action=removestaff&id=<?php echo $contact['id'] ?>" 
+		<a href="hotline_staff.php?action=removestaff&id=<?php echo $contact['id'] ?>" 
 		   onClick="return confirm('Are you sure you want to remove this staff entry?');">
 		 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
 <?php
@@ -178,7 +189,7 @@ foreach ($contacts as $contact) {
 				echo "</s>";
 			}
 ?>
-		<a href="staff.php?action=removecalltime&id=<?php echo $call_time['id'] ?>" 
+		<a href="hotline_staff.php?action=removecalltime&id=<?php echo $call_time['id'] ?>" 
 		   onClick="return confirm('Are you sure you want to remove this record?');">
 		 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
 <?php
@@ -195,7 +206,7 @@ foreach ($contacts as $contact) {
               </tbody>
             </table>
           </div>
-          <form id="text-controls" action="staff.php" method="POST">
+          <form id="text-controls" action="hotline_staff.php" method="POST">
 		   <input type="hidden" name="action" value="add">
 		   <div class="form-group">
 			<label for="text-message">Add staff</label>

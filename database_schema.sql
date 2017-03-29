@@ -9,6 +9,19 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `blocks`
+--
+
+CREATE TABLE `blocks` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `phone` varchar(25) NOT NULL,
+  `added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='List of blocked numbers.';
+
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `broadcast`
 --
 
@@ -118,6 +131,13 @@ INSERT INTO `languages` (`id`, `language`, `prompt`, `voicemail`, `voicemail_rec
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `blocks`
+--
+ALTER TABLE `blocks`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `phone` (`phone`);
 
 --
 -- Indexes for table `broadcast`

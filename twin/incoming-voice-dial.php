@@ -25,7 +25,8 @@ $response = new Twilio\Twiml();
 // is the call still active?
 if ($call_status != 'completed') {
     // digit 0 indicates that the caller wants to go straight to voicemail
-    if ($digit == '0') {
+    // also send to voicemail if this number is blocked
+    if ($digit == '0' || sms_isNumberBlocked($from)) {
         $response->redirect('voicemail.php?language_id=0');
     } else {
 		// load the language data

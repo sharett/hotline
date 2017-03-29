@@ -115,6 +115,12 @@ function processHotlineText($from, $body, &$message, &$error)
 		$from_descriptive = " ({$contact_name})";
 	}
 
+	// is this number blocked?
+	if (sms_isNumberBlocked($from, $error)) {
+		// number is blocked, don't forward it or reply
+		return true;
+	}
+
 	// was anything sent?
 	if ($from && $body) {
 		// yes

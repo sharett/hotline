@@ -661,4 +661,28 @@ function sms_loadLanguage($id, &$language, &$error)
 	return true;
 }
 
+/**
+* Is a phone number blocked?
+*
+* ...
+* 
+* @param string $phone
+*   The phone number to check
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True if the phone number was blocked.
+*/
+
+function sms_isNumberBlocked($phone, &$error)
+{
+	$sql = "SELECT COUNT(*) FROM blocks WHERE phone='".addslashes($phone)."'";
+	if (!db_db_getone($sql, $count, $error)) {
+		return false;
+	}
+	
+	return ($count > 0);
+}
+
 ?>
