@@ -17,10 +17,18 @@ $request_response = trim($_REQUEST['response']);
 $confirmed = $_REQUEST['confirm'];
 $communications_id = $_REQUEST['id'];
 
+// Authorized user?
+$authorized = empty($BROADCAST_AUTHORIZED_USERS) || 
+	in_array($_SERVER['PHP_AUTH_USER'], $BROADCAST_AUTHORIZED_USERS);
+if (!$authorized) {
+	// no
+	$error = "You are not authorized to send broadcast texts.";
+}
+
 // *** ACTIONS ***
 
 // send a text message?
-if ($action == 'broadcast') {
+if ($action == 'broadcast' && $authorized) {
 	if ($confirmed == 'on') {
 		// confirmed, send the broadcast
 		if (sendBroadcastText($text, $request_response, $error, $success)) {
@@ -34,7 +42,7 @@ if ($action == 'broadcast') {
 }
 
 // send a text message to those who responded to a previous broadcast?
-if ($action == 'broadcast_response') {
+if ($action == 'broadcast_response' && $authorized) {
 	if (sendBroadcastResponseText($text, $communications_id, $error, $success)) {
 		$text = '';
 	}

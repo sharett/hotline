@@ -17,16 +17,24 @@ $action = $_REQUEST['action'];
 $staff = $_POST['staff'];
 $id = $_REQUEST['id'];
 
+// Authorized user?
+$authorized = empty($HOTLINE_AUTHORIZED_USERS) || 
+	in_array($_SERVER['PHP_AUTH_USER'], $HOTLINE_AUTHORIZED_USERS);
+if (!$authorized) {
+	// no
+	$error = "You are not authorized to update staff information.";
+}
+
 // *** ACTIONS ***
 
 // quick add?
-if ($action == 'add') {
+if ($action == 'add' && $authorized) {
 	addStaff($staff, $error, $success);
 // remove staff?
-} else if ($action == 'removestaff') {
+} else if ($action == 'removestaff' && $authorized) {
 	removeStaff($id, $error, $success);
 // remove call time?
-} else if ($action == 'removecalltime') {
+} else if ($action == 'removecalltime' && $authorized) {
 	removeCallTime($id, $error, $success);
 }
 
@@ -292,6 +300,24 @@ function addStaff($staff, &$error, &$message)
 
 		// is a day provided?
 		if (trim($staff_array[2])) {
+			// provide defaults
+			if (!$staff_array[3]) {
+				// default earliest time
+				$staff_array[3] = '12:00 am';
+			}
+			if (!$staff_array[4]) {
+				// default latest time
+				$staff_array[4] = '11:59 pm';
+			}
+			if (!$staff_array[5]) {
+				// default language id
+				$staff_array[5] = 1;
+			}
+			if ($staff_array[6] == '') {
+				// default to sending texts
+				$staff_array[6] = 1;
+			}
+			
 			// add a call_times record
 			$sql = "INSERT INTO call_times SET ".
 				"contact_id='".addslashes($contact['id'])."',".
