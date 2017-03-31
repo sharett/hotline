@@ -621,12 +621,12 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 }
 
 /**
-* Load a language table entry
+* Load a language table entry by language digit
 *
 * ...
 * 
-* @param int $id
-*   The language id to load
+* @param int $digit
+*   The language digit to load
 * @param array &$language
 *   Set to the loaded language.
 * @param string &$error
@@ -636,28 +636,69 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 *   True unless an error occurred.
 */
 
-function sms_loadLanguage($id, &$language, &$error)
+function sms_loadLanguageByDigit($digit, &$language, &$error)
 {	
+	// first, does the digit exist?
+	if ($digit) {
+		$sql = "SELECT COUNT(*) FROM languages WHERE digit='". addslashes($digit) . "'";
+		if (!db_db_getone($sql, $exists, $error)) {
+			return false;
+		}
+		
+		if (!$exists) {
+			$digit = 1;  // default to the first language
+		}
+	} else {
+		$digit= 1;
+	}
+	
+	// now load the record
+	$sql = "SELECT * FROM languages WHERE digit='". addslashes($digit) . "'";
+	if (!db_db_getrow($sql, $language, $error)) {
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+* Load a language table entry by language id
+*
+* ...
+*
+* @param int $id
+*   The language id to load
+* @param array &$language
+*   Set to the loaded language.
+* @param string &$error
+*   An error if one occurred.
+*
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_loadLanguageById($id, &$language, &$error)
+{
 	// first, does the id exist?
 	if ($id) {
 		$sql = "SELECT COUNT(*) FROM languages WHERE id='". addslashes($id) . "'";
 		if (!db_db_getone($sql, $exists, $error)) {
 			return false;
 		}
-		
+
 		if (!$exists) {
 			$id = 1;  // default to the first language
 		}
 	} else {
 		$id = 1;
 	}
-	
+
 	// now load the record
 	$sql = "SELECT * FROM languages WHERE id='". addslashes($id) . "'";
 	if (!db_db_getrow($sql, $language, $error)) {
 		return false;
 	}
-	
+
 	return true;
 }
 

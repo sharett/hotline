@@ -212,7 +212,7 @@ foreach ($contacts as $contact) {
 			<label for="text-message">Add staff</label>
 			<textarea class="form-control" name="staff" rows="3" cols="30"></textarea>
 			<p class="help-block">
-			  <b>Format:</b> name,phone number,day,earliest time,latest time,language id,texts (0 or 1).
+			  <b>Format:</b> name,phone number,day,earliest time,latest time,language digit,texts (0 or 1).
 			  Only name and phone number required.
 			</p>
  		   </div>		 
@@ -264,7 +264,7 @@ function addStaff($staff, &$error, &$message)
 		// 2 = day
 		// 3 = earliest time
 		// 4 = latest time
-		// 5 = language id
+		// 5 = language digit
 		// 6 = texts (0 or 1).
 		
 		// make sure the number is in E164 format
@@ -321,21 +321,29 @@ function addStaff($staff, &$error, &$message)
 				$staff_array[4] = '11:59 pm';
 			}
 			if (!$staff_array[5]) {
-				// default language id
-				$staff_array[5] = 1;
+				// default language digit
+				$staff_array[5] = 2;
 			}
 			if ($staff_array[6] == '') {
 				// default to sending texts
 				$staff_array[6] = 1;
 			}
 			
+		    // get language_id from the language_digit
+		    $language_id = "1";
+		    $sql = "SELECT id FROM languages WHERE digit='". addslashes($staff_array[5]) . "'";
+		    if (!db_db_getone($sql, $language_id, $db_error)){
+		        $error = "{$staff_line}: {$db_error}<br />\n";
+		        continue;
+		    }
+
 			// add a call_times record
 			$sql = "INSERT INTO call_times SET ".
 				"contact_id='".addslashes($contact['id'])."',".
 				"day='".trim(addslashes($staff_array[2]))."',".
 				"earliest='".addslashes(date("H:i:s", strtotime($staff_array[3])))."',".
 				"latest='".addslashes(date("H:i:s", strtotime($staff_array[4])))."',".
-				"language_id='".addslashes($staff_array[5])."',".
+				"language_id='".addslashes($language_id)."',".
 				"receive_texts='". ($staff_array[6] ? 'y' : 'n') . "'";
 			if (!db_db_command($sql, $db_error)) {
 				$error .= "{$staff_line}: {$db_error}<br />\n";

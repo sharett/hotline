@@ -10,7 +10,7 @@ require_once 'config.php';
 
 include 'header.php';
 
-if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
+if (!db_db_query("SELECT * FROM languages ORDER BY digit", $languages, $error)) {
     echo $error;
 }
 
@@ -29,7 +29,7 @@ if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
             <table class="table table-striped">
               <thead>
                 <tr>
-				  <th>id</th>
+				  <th>digit</th>
                   <th>language</th>
                   <th>prompt</th>
                   <th>twilio code</th>
@@ -40,7 +40,7 @@ if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
 foreach ($languages as $language) {
 ?>
                 <tr>
-				  <td><?php echo $language['id']?></td>
+				  <td><?php echo $language['digit']?></td>
                   <td><?php echo $language['language']?></td>
                   <td><?php echo $language['prompt']?></td>
                   <td><?php echo $language['twilio_code']?></td>
