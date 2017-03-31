@@ -636,9 +636,9 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 *   True unless an error occurred.
 */
 
-function sms_loadLanguage($digit, &$language, &$error)
+function sms_loadLanguageByDigit($digit, &$language, &$error)
 {	
-	// first, does the id exist?
+	// first, does the digit exist?
 	if ($digit) {
 		$sql = "SELECT COUNT(*) FROM languages WHERE digit='". addslashes($digit) . "'";
 		if (!db_db_getone($sql, $exists, $error)) {
@@ -677,7 +677,7 @@ function sms_loadLanguage($digit, &$language, &$error)
 *   True unless an error occurred.
 */
 
-function sms_loadLanguage_by_id($id, &$language, &$error)
+function sms_loadLanguageById($id, &$language, &$error)
 {
 	// first, does the id exist?
 	if ($id) {

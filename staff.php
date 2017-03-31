@@ -295,7 +295,9 @@ function addStaff($staff, &$error, &$message)
 		    // get language_id from the language_digit
 		    $language_id = "1";
 		    $sql = "SELECT id FROM languages WHERE digit='". addslashes($staff_array[5]) . "'";
-		    if(!db_db_getone($sql, $language_id, $error)){
+		    if(!db_db_getone($sql, $language_id, $db_error)){
+		        $error = "{$staff_line}: {$db_error}<br />\n";
+		        continue;
 		        }
 			// add a call_times record
 			$sql = "INSERT INTO call_times SET ".
@@ -303,7 +305,7 @@ function addStaff($staff, &$error, &$message)
 				"day='".trim(addslashes($staff_array[2]))."',".
 				"earliest='".addslashes(date("H:i:s", strtotime($staff_array[3])))."',".
 				"latest='".addslashes(date("H:i:s", strtotime($staff_array[4])))."',".
-				"language_id='{$language_id}',".
+				"language_id='".addslashes($language_id)."',".
 				"receive_texts='". ($staff_array[6] ? 'y' : 'n') . "'";
 			if (!db_db_command($sql, $db_error)) {
 				$error .= "{$staff_line}: {$db_error}<br />\n";

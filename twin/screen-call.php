@@ -15,7 +15,7 @@ db_databaseConnect();
 $language_id = (int)$_REQUEST['Digits'];
 
 // load the language data
-sms_loadLanguage_by_id($language_id, $language, $error);
+sms_loadLanguageById($language_id, $language, $error);
 
 $response = new Twilio\Twiml();
 

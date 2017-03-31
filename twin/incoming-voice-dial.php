@@ -15,8 +15,7 @@ require_once $LIB_BASE . 'lib_sms.php';
 db_databaseConnect();
 
 // URL parameters
-$language_digit = (int)$_REQUEST['Digits'];
-$digit = $_REQUEST['Digits'];
+$language_digit = $_REQUEST['Digits'];
 $from = $_REQUEST['From'];
 $call_status = $_REQUEST['CallStatus'];
 
@@ -25,11 +24,11 @@ $response = new Twilio\Twiml();
 // is the call still active?
 if ($call_status != 'completed') {
     // digit 0 indicates that the caller wants to go straight to voicemail
-    if ($digit == '0') {
+    if ($language_digit == '0') {
         $response->redirect('voicemail.php?language_id=0');
     } else {
 		// load the language data
-		sms_loadLanguage($language_digit, $language, $error);
+		sms_loadLanguageByDigit($language_digit, $language, $error);
 		$language_id = (int)$language['id'];
 
 		// get the staff's phone numbers to call

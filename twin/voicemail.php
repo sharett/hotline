@@ -18,7 +18,7 @@ $response = new Twilio\Twiml();
 $language_id = $_REQUEST['language_id'];
 
 // load language data
-sms_loadLanguage_by_id($language_id, $language, $error);
+sms_loadLanguageById($language_id, $language, $error);
 
 // no one available to answer
 if ($language_id != 0) {
