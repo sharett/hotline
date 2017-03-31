@@ -15,8 +15,7 @@ require_once $LIB_BASE . 'lib_sms.php';
 db_databaseConnect();
 
 // URL parameters
-$digit = $_REQUEST['Digits'];
-$language_id = (int)$_REQUEST['Digits'];
+$language_digit = $_REQUEST['Digits'];
 $from = $_REQUEST['From'];
 $call_status = $_REQUEST['CallStatus'];
 
@@ -26,27 +25,27 @@ $response = new Twilio\Twiml();
 if ($call_status != 'completed') {
     // digit 0 indicates that the caller wants to go straight to voicemail
     // also send to voicemail if this number is blocked
-    if ($digit == '0' || sms_isNumberBlocked($from)) {
+    if ($language_digit == '0' || sms_isNumberBlocked($from)) {
         $response->redirect('voicemail.php?language_id=0');
     } else {
 		// load the language data
-		sms_loadLanguage($language_id, $language, $error);
-		$language_id = $language['id'];
+		sms_loadLanguageByDigit($language_digit, $language, $error);
+		$language_id = (int)$language['id'];
 
 		// get the staff's phone numbers to call
 		getNumbersToCall($from, $language_id, $numbers, $error);
-		
+
 		// anyone to call?
 		if (count($numbers)) {
 			// initiate calls to each of these staff
-			sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id, 
+			sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id,
 				$HOTLINE_CALLER_ID, $error);
 
 			// enqueue the caller
 			$response->enqueue('hotline',
 				array('waitUrl' => $TWILIO_INTERFACE_WEBROOT . 'incoming-voice-queue.php?language_id=' . $language_id)
 			);
-			
+
 			// fall through to voicemail when leaving the queue
 			$response->redirect('voicemail.php?language_id=' . $language_id);
 		} else {

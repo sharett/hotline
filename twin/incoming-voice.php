@@ -17,7 +17,7 @@ db_databaseConnect();
 sms_storeCallData($_REQUEST, $error);
 
 // load the list of languages
-if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
+if (!db_db_query("SELECT * FROM languages ORDER BY digit", $languages, $error)) {
     // error!
 }
 
