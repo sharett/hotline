@@ -137,10 +137,7 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 	$error = '';
 	foreach ($numbers as $number) {
         try {
-			// don't initiate a call if another with the same to and from numbers
-			// is in progress
-			
-			// create the call			
+			// create the call		
 			$call = $client->calls->create($number, $from,
 				array(
 					"url" => $url,
@@ -166,8 +163,10 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 * Calls with the statuses queued, ringing or in-progress are considered
 * active.
 * 
-* @param string $phone
-*   The phone number that must be the from or to number in the calls
+* @param string $from
+*   The phone number that must be the from number in the calls
+* @param string $to
+*   The phone number that must be the to number in the calls
 * @param array &$calls
 *   Filled with the array of active calls
 * @param string &$error
@@ -177,7 +176,7 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 *   True - errors reported in $error parameter.
 */
 
-function sms_getActiveCalls($phone, &$calls, &$error)
+function sms_getActiveCalls($from, $to, &$calls, &$error)
 {
 	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN;
 	
@@ -187,14 +186,20 @@ function sms_getActiveCalls($phone, &$calls, &$error)
 	// retrieve the calls
 	$error = '';
 	$calls = array();
-
-	_sms_getCallInfo(array("status" => "queued", "to" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "ringing", "to" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "in-progress", "to" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "queued", "from" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "ringing", "from" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "in-progress", "from" => $phone), $client, $calls, $error);
-
+	
+	$statuses = array("queued", "ringing", "in-progress");
+	foreach ($statuses as $status) {
+		// for each status type, build an array that requests a from or to number, or both
+		$read_array = array("status" => $status);
+		if ($from) {
+			$read_array['from'] = $from;
+		}
+		if ($to) {
+			$read_array['to'] = $to;
+		}
+		_sms_getCallInfo($read_array, $client, $calls, $error);
+	}
+	
 	return true;
 }
 
@@ -235,6 +240,42 @@ function _sms_getCallInfo($read_array, &$client, &$calls, &$error)
 		// catch errors
 		$error .= $e->getMessage() . "\n";
 		return false;
+	}
+	
+	return true;
+}
+
+/**
+* Gets the details of a particular queue
+*
+* ...
+* 
+* @param string $name
+*   The queue's to retrieve's "friendlyName"
+* @param object &$queue
+*   Set to the queue object
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred
+*/
+
+function sms_getQueueInfo($name, &$queue, &$error)
+{
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN;
+	
+	// create a Twilio client
+	$client = new Twilio\Rest\Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
+	
+	// loop over the list of queues and find the matching one
+	$queue = '';
+	foreach ($client->queues->read() as $queue_query) {
+		if ($queue_query->friendlyName == $name) {
+			// the name matches
+			$queue = $queue_query;
+			break;
+		}
 	}
 	
 	return true;

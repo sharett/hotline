@@ -63,6 +63,49 @@ if ($success) {
 		  <br />
 <?php
 
+// Active calls from and to the hotline
+sms_getActiveCalls($HOTLINE_CALLER_ID, '', $calls_from, $error);
+sms_getActiveCalls('', $HOTLINE_CALLER_ID, $calls_to, $error);
+$calls = array_merge($calls_from, $calls_to);
+
+if (count($calls)) {
+?>          
+        <h3 class="sub-header">Active calls</h3>
+		  <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>from</th>
+                  <th>to</th>
+                  <th>status</th>
+                  <th>timing</th>
+                </tr>
+              </thead>
+              <tbody>
+<?php
+	foreach ($calls as $call) {
+		$duration = strtotime($call['EndTime']) - strtotime($call['StartTime']);
+?>
+                <tr>
+                  <td><?php
+                  echo '<a href="contact.php?ph=' . urlencode($call['From']) . '">' . $call['From'] . '</a>';
+                  ?></td>
+                  <td><?php
+                  echo '<a href="contact.php?ph=' . urlencode($call['To']) . '">' . $call['To'] . '</a>';
+                  ?></td>
+                  <td><?php echo $call['Status']?></td>
+                  <td><?php echo date("m/d/y h:i a", strtotime($call['StartTime'])) . 
+								 ' (' . $duration . ' seconds)' ?></td>
+                </tr>
+<?php
+	}
+?>
+              </tbody>
+            </table>
+          </div>
+<?php
+}
+
 // On duty now
 ?>
         <h3 class="sub-header">On duty now</h3>
@@ -93,44 +136,6 @@ foreach ($contacts as $contact) {
           </div>
 
 <?php
-sms_getActiveCalls($HOTLINE_CALLER_ID, $calls, $error);
-if (count($calls)) {
-?>          
-        <h3 class="sub-header">Active calls</h3>
-		  <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>from</th>
-                  <th>to</th>
-                  <th>status</th>
-                  <th>timing</th>
-                </tr>
-              </thead>
-              <tbody>
-<?php
-foreach ($calls as $call) {
-	$duration = strtotime($call['EndTime']) - strtotime($call['StartTime']);
-?>
-                <tr>
-                  <td><?php
-                  echo '<a href="contact.php?ph=' . urlencode($call['From']) . '">' . $call['From'] . '</a>';
-                  ?></td>
-                  <td><?php
-                  echo '<a href="contact.php?ph=' . urlencode($call['To']) . '">' . $call['To'] . '</a>';
-                  ?></td>
-                  <td><?php echo $call['Status']?></td>
-                  <td><?php echo date("m/d/y h:i a", strtotime($call['StartTime'])) . 
-								 ' (' . $duration . ' seconds)' ?></td>
-                </tr>
-<?php
-}
-?>
-              </tbody>
-            </table>
-          </div>
-<?php
-}
 
 // All hotline staff
 if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $error)) {

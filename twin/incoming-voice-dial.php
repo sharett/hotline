@@ -33,14 +33,16 @@ if ($call_status != 'completed') {
 		$language_id = (int)$language['id'];
 
 		// get the staff's phone numbers to call
-		getNumbersToCall($from, $language_id, $numbers, $error);
+		getNumbersToCall($from, $language_id, $enqueue_anyway, $numbers, $error);
 
 		// anyone to call?
-		if (count($numbers)) {
+		if (count($numbers) || $enqueue_anyway) {
 			// initiate calls to each of these staff
-			sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id,
-				$HOTLINE_CALLER_ID, $error);
-
+			if (count($numbers)) {
+				sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id,
+					$HOTLINE_CALLER_ID, $error);
+			}
+			
 			// enqueue the caller
 			$response->enqueue('hotline',
 				array('waitUrl' => $TWILIO_INTERFACE_WEBROOT . 'incoming-voice-queue.php?language_id=' . $language_id)
@@ -69,6 +71,9 @@ db_databaseDisconnect();
 *   The person who is calling the hotline
 * @param int $language_id
 *   The language they are requesting
+* @param bool &$enqueue_anyway
+*   Set to true if the caller should be enqueued even if there are no
+*   numbers to call.
 * @param array &$numbers
 *   Set to an array of numbers to call
 * @param string &$error
@@ -78,10 +83,11 @@ db_databaseDisconnect();
 *   True unless an error occurred
 */
 
-function getNumbersToCall($from, $language_id, &$numbers, &$error)
+function getNumbersToCall($from, $language_id, &$enqueue_anyway, &$numbers, &$error)
 {
 	global $HOTLINE_CALLER_ID;
 	
+	$call_anyway = false;
 	$numbers = array();
 	
 	// who should we call given the current day, time and language?
@@ -97,9 +103,9 @@ function getNumbersToCall($from, $language_id, &$numbers, &$error)
 	
 	// yes, pull out the phone numbers
 	
-	// check the currently active calls, and don't call people who are already
-	// on a call
-	if (!sms_getActiveCalls($HOTLINE_CALLER_ID, $active_calls, $error)) {
+	// check the currently active calls coming from this number, and 
+	// don't call people who are already on a call
+	if (!sms_getActiveCalls($HOTLINE_CALLER_ID, '', $active_calls, $error)) {
 		return false;
 	}
 	
@@ -108,14 +114,24 @@ function getNumbersToCall($from, $language_id, &$numbers, &$error)
 		if ($from == $contact['phone']) {
 			continue;
 		}
-		
+			
 		// don't call people already on a call
+		$in_progress = false;
 		foreach ($active_calls as $call) {
 			if ($call['From'] == $HOTLINE_CALLER_ID &&
 				$call['To'] == $contact['phone']) {
 				// an active call is in progress
-				continue;
+				$in_progress = true;
+				
+				// which means that there are calls in progress that might
+				// be ready to answer - call anyway even if all numbers
+				// are eliminated
+				$call_anyway = true;
+				break;
 			}
+		}
+		if ($in_progress) {
+			continue;
 		}
 		
 		$numbers[] = $contact['phone'];
@@ -124,7 +140,7 @@ function getNumbersToCall($from, $language_id, &$numbers, &$error)
 	// randomize the numbers to call so different people get called first
 	// (there is a 1 second delay between each call)
 	shuffle($numbers);
-	
+		
 	return true;
 }
 
