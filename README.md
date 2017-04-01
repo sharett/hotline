@@ -32,7 +32,7 @@ It is not production ready and is very much in progress.
 
 * Password protect access to the directory you installed it to.  HTTP basic security should work.
 
-* Install a database editing utility such as PhpMyAdmin and place it in a directory under the main directory.
+* Install a database editing utility such as PhpMyAdmin and place it in the "sanctdb" directory under the main directory.
 
 * Create a database and credentials to access it (using this utility or directly via the command line using mysql).
 
