@@ -9,6 +9,19 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `blocks`
+--
+
+CREATE TABLE `blocks` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `phone` varchar(25) NOT NULL,
+  `added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='List of blocked numbers.';
+
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `broadcast`
 --
 
@@ -101,23 +114,32 @@ CREATE TABLE `errors` (
 CREATE TABLE `languages` (
   `id` int(11) UNSIGNED NOT NULL,
   `language` varchar(25) NOT NULL,
+  `digit` int(1) UNSIGNED NOT NULL,
   `prompt` varchar(255) NOT NULL,
   `voicemail` varchar(255) NOT NULL DEFAULT '',
   `voicemail_received` varchar(255) NOT NULL DEFAULT '',
   `twilio_code` varchar(15) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Languages the hotline supports';
 
+
 --
 -- Dumping data for table `languages`
 --
 
-INSERT INTO `languages` (`id`, `language`, `prompt`, `voicemail`, `voicemail_received`, `twilio_code`) VALUES
-(1, 'English', 'Press 1 for English.', 'No one is available to answer.  Please leave a message.', 'Your voicemail has been received.  Goodbye.', 'en-US'),
-(2, 'Spanish', 'Para espa&#241;ol oprima dos.', 'Nadie esta disponible. Favor de dejar un mensaje.', 'Tu correo de voz se ha recibido. Adi&oacute;s.', 'es-MX');
+INSERT INTO `languages` (`id`, `language`, `digit`, `prompt`, `voicemail`, `voicemail_received`, `twilio_code`) VALUES
+(1, 'English', 2, 'Press 2 for English.', 'No one is available to answer.  Please leave a message.', 'Your voicemail has been received.  Goodbye.', 'en-US'),
+(2, 'Spanish', 1, 'Para espa&#241;ol oprima uno.', 'Nadie esta disponible. Favor de dejar un mensaje.', 'Tu correo de voz se ha recibido. Adi&oacute;s.', 'es-MX');
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `blocks`
+--
+ALTER TABLE `blocks`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `phone` (`phone`);
 
 --
 -- Indexes for table `broadcast`

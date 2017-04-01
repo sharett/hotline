@@ -3,7 +3,7 @@
 * @file
 * Staff
 *
-* Display hotline staff on duty now, and all staff
+* Display and edit hotline staff on duty now, and all staff
 * 
 */
 
@@ -17,16 +17,24 @@ $action = $_REQUEST['action'];
 $staff = $_POST['staff'];
 $id = $_REQUEST['id'];
 
+// Authorized user?
+$authorized = empty($HOTLINE_AUTHORIZED_USERS) || 
+	in_array($_SERVER['PHP_AUTH_USER'], $HOTLINE_AUTHORIZED_USERS);
+if (!$authorized) {
+	// no
+	$error = "You are not authorized to update staff information.";
+}
+
 // *** ACTIONS ***
 
 // quick add?
-if ($action == 'add') {
+if ($action == 'add' && $authorized) {
 	addStaff($staff, $error, $success);
 // remove staff?
-} else if ($action == 'removestaff') {
+} else if ($action == 'removestaff' && $authorized) {
 	removeStaff($id, $error, $success);
 // remove call time?
-} else if ($action == 'removecalltime') {
+} else if ($action == 'removecalltime' && $authorized) {
 	removeCallTime($id, $error, $success);
 }
 
@@ -44,9 +52,63 @@ if ($success) {
 <?php
 }
 
+?>
+		<h2 class="sub-header">Hotline</h2>
+   		  <ul class="nav nav-pills">
+			<li role="presentation" class="active"><a href="hotline_staff.php">Staff</a></li>
+			<li role="presentation"><a href="hotline_blocks.php">Blocks</a></li>
+			<li role="presentation"><a href="hotline_languages.php">Languages</a></li>
+			<li role="presentation"><a href="contact.php?ph=<?php echo $HOTLINE_CALLER_ID ?>&hide=1">Log</a></li>
+		  </ul>
+		  <br />
+<?php
+
+// Active calls from and to the hotline
+sms_getActiveCalls($HOTLINE_CALLER_ID, '', $calls_from, $error);
+sms_getActiveCalls('', $HOTLINE_CALLER_ID, $calls_to, $error);
+$calls = array_merge($calls_from, $calls_to);
+
+if (count($calls)) {
+?>          
+        <h3 class="sub-header">Active calls</h3>
+		  <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>from</th>
+                  <th>to</th>
+                  <th>status</th>
+                  <th>timing</th>
+                </tr>
+              </thead>
+              <tbody>
+<?php
+	foreach ($calls as $call) {
+		$duration = strtotime($call['EndTime']) - strtotime($call['StartTime']);
+?>
+                <tr>
+                  <td><?php
+                  echo '<a href="contact.php?ph=' . urlencode($call['From']) . '">' . $call['From'] . '</a>';
+                  ?></td>
+                  <td><?php
+                  echo '<a href="contact.php?ph=' . urlencode($call['To']) . '">' . $call['To'] . '</a>';
+                  ?></td>
+                  <td><?php echo $call['Status']?></td>
+                  <td><?php echo date("m/d/y h:i a", strtotime($call['StartTime'])) . 
+								 ' (' . $duration . ' seconds)' ?></td>
+                </tr>
+<?php
+	}
+?>
+              </tbody>
+            </table>
+          </div>
+<?php
+}
+
 // On duty now
 ?>
-        <h2 class="sub-header">On duty now</h2>
+        <h3 class="sub-header">On duty now</h3>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead>
@@ -74,44 +136,6 @@ foreach ($contacts as $contact) {
           </div>
 
 <?php
-sms_getActiveCalls($HOTLINE_CALLER_ID, $calls, $error);
-if (count($calls)) {
-?>          
-        <h3 class="sub-header">Active calls</h3>
-		  <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>from</th>
-                  <th>to</th>
-                  <th>status</th>
-                  <th>timing</th>
-                </tr>
-              </thead>
-              <tbody>
-<?php
-foreach ($calls as $call) {
-	$duration = strtotime($call['EndTime']) - strtotime($call['StartTime']);
-?>
-                <tr>
-                  <td><?php
-                  echo '<a href="contact.php?ph=' . urlencode($call['From']) . '">' . $call['From'] . '</a>';
-                  ?></td>
-                  <td><?php
-                  echo '<a href="contact.php?ph=' . urlencode($call['To']) . '">' . $call['To'] . '</a>';
-                  ?></td>
-                  <td><?php echo $call['Status']?></td>
-                  <td><?php echo date("m/d/y h:i a", strtotime($call['StartTime'])) . 
-								 ' (' . $duration . ' seconds)' ?></td>
-                </tr>
-<?php
-}
-?>
-              </tbody>
-            </table>
-          </div>
-<?php
-}
 
 // All hotline staff
 if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $error)) {
@@ -119,7 +143,7 @@ if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $err
 }
 
 ?>
-          <h2 class="sub-header">Staff</h2>
+          <h3 class="sub-header">Staff</h3>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead>
@@ -148,7 +172,7 @@ foreach ($contacts as $contact) {
     // allow removal of staff entry if all call time records are removed
     if (count($call_times) == 0) {
 ?>
-		<a href="staff.php?action=removestaff&id=<?php echo $contact['id'] ?>" 
+		<a href="hotline_staff.php?action=removestaff&id=<?php echo $contact['id'] ?>" 
 		   onClick="return confirm('Are you sure you want to remove this staff entry?');">
 		 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
 <?php
@@ -170,7 +194,7 @@ foreach ($contacts as $contact) {
 				echo "</s>";
 			}
 ?>
-		<a href="staff.php?action=removecalltime&id=<?php echo $call_time['id'] ?>" 
+		<a href="hotline_staff.php?action=removecalltime&id=<?php echo $call_time['id'] ?>" 
 		   onClick="return confirm('Are you sure you want to remove this record?');">
 		 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
 <?php
@@ -187,13 +211,13 @@ foreach ($contacts as $contact) {
               </tbody>
             </table>
           </div>
-          <form id="text-controls" action="staff.php" method="POST">
+          <form id="text-controls" action="hotline_staff.php" method="POST">
 		   <input type="hidden" name="action" value="add">
 		   <div class="form-group">
 			<label for="text-message">Add staff</label>
 			<textarea class="form-control" name="staff" rows="3" cols="30"></textarea>
 			<p class="help-block">
-			  <b>Format:</b> name,phone number,day,earliest time,latest time,language id,texts (0 or 1).
+			  <b>Format:</b> name,phone number,day,earliest time,latest time,language digit,texts (0 or 1).
 			  Only name and phone number required.
 			</p>
  		   </div>		 
@@ -245,7 +269,7 @@ function addStaff($staff, &$error, &$message)
 		// 2 = day
 		// 3 = earliest time
 		// 4 = latest time
-		// 5 = language id
+		// 5 = language digit
 		// 6 = texts (0 or 1).
 		
 		// make sure the number is in E164 format
@@ -292,13 +316,39 @@ function addStaff($staff, &$error, &$message)
 
 		// is a day provided?
 		if (trim($staff_array[2])) {
+			// provide defaults
+			if (!$staff_array[3]) {
+				// default earliest time
+				$staff_array[3] = '12:00 am';
+			}
+			if (!$staff_array[4]) {
+				// default latest time
+				$staff_array[4] = '11:59 pm';
+			}
+			if (!$staff_array[5]) {
+				// default language digit
+				$staff_array[5] = 2;
+			}
+			if ($staff_array[6] == '') {
+				// default to sending texts
+				$staff_array[6] = 1;
+			}
+			
+		    // get language_id from the language_digit
+		    $language_id = "1";
+		    $sql = "SELECT id FROM languages WHERE digit='". addslashes($staff_array[5]) . "'";
+		    if (!db_db_getone($sql, $language_id, $db_error)){
+		        $error = "{$staff_line}: {$db_error}<br />\n";
+		        continue;
+		    }
+
 			// add a call_times record
 			$sql = "INSERT INTO call_times SET ".
 				"contact_id='".addslashes($contact['id'])."',".
 				"day='".trim(addslashes($staff_array[2]))."',".
 				"earliest='".addslashes(date("H:i:s", strtotime($staff_array[3])))."',".
 				"latest='".addslashes(date("H:i:s", strtotime($staff_array[4])))."',".
-				"language_id='".addslashes($staff_array[5])."',".
+				"language_id='".addslashes($language_id)."',".
 				"receive_texts='". ($staff_array[6] ? 'y' : 'n') . "'";
 			if (!db_db_command($sql, $db_error)) {
 				$error .= "{$staff_line}: {$db_error}<br />\n";

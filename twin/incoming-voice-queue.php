@@ -27,7 +27,7 @@ $response->pause(1);
 */
 
 // exit if longer than 30 seconds
-if ($queue_time > 10) {
+if ($queue_time > 30) {
 	$response->leave();
 }
 

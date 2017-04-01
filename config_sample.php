@@ -36,6 +36,8 @@ $TWILIO_COST_PER_TEXT = 0.0075;
 // Optional twilio TwiML app for placing in-browser calls
 $TWILIO_TWIML_APP_SID = '';
 
+// **** BROADCAST ****
+
 // Broadcast number
 $BROADCAST_CALLER_ID = '+1NXXNXXXXXX';
 
@@ -44,6 +46,11 @@ $BROADCAST_WELCOME = "Welcome to the ". $HOTLINE_NAME . " alert list. ".
 	"To remove yourself from the list, text OFF. To put yourself back on, ".
 	"text ON.";
 $BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
+
+// List users authorized to send broadcast texts here.  Leave blank to allow all users.
+$BROADCAST_AUTHORIZED_USERS = array();
+
+// **** HOTLINE ****
 
 // Main hotline number
 $HOTLINE_CALLER_ID = '+1NXXNXXXXXX';
@@ -56,6 +63,11 @@ $HOTLINE_STAFF_PROMPT_2 = '. Press 1 to accept.';
 $HOTLINE_STRAIGHT_TO_VOICEMAIL= 'or press 0 for voicemail';
 $HOTLINE_CONNECTING_TO_CALLER = 'Connecting you to the caller.';
 $HOTLINE_CALLER_HUNG_UP = 'The caller hung up or someone else took the call.  Goodbye.';
+
+// List users authorized to update the staff data here.  Leave blank to allow all users.
+$HOTLINE_AUTHORIZED_USERS = array();
+
+// **** DATABASE ****
 
 // Database setup
 $HOTLINE_DB_DATABASE = '';
