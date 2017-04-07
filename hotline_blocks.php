@@ -21,14 +21,14 @@ $id = $_REQUEST['id'];
 
 // add?
 if ($action == 'add') {
-	addBlock($phone, $error, $success);
+	addBlockedNumber($phone, $error, $success);
 // remove?
 } else if ($action == 'remove') {
-	removeBlock($id, $error, $success);
+	removeBlockedNumber($id, $error, $success);
 }
 
 // load blocks
-$sql = "SELECT * FROM blocks ORDER by phone";
+$sql = "SELECT * FROM blocked_numbers ORDER by phone";
 db_db_query($sql, $blocks, $error);
 
 // any error message?
@@ -100,7 +100,7 @@ include 'footer.php';
 *   True if added successfully.
 */
 
-function addBlock($phone, &$error, &$message)
+function addBlockedNumber($phone, &$error, &$message)
 {
 	$error = '';
 	$message = '';
@@ -116,7 +116,7 @@ function addBlock($phone, &$error, &$message)
 	}
 
 	// is this number in the database already?
-	$sql = "SELECT COUNT(*) FROM blocks WHERE phone='".addslashes($phone)."'";
+	$sql = "SELECT COUNT(*) FROM blocked_numbers WHERE phone='".addslashes($phone)."'";
 	if (!db_db_getone($sql, $number_exists, $error)) {
 		return false;
 	}
@@ -126,7 +126,7 @@ function addBlock($phone, &$error, &$message)
 	}
 		
 	// add the number to the database
-	$sql = "INSERT INTO blocks SET phone='".addslashes($phone)."'";
+	$sql = "INSERT INTO blocked_numbers SET phone='".addslashes($phone)."'";
 	if (!db_db_command($sql, $error)) {
 		return false;
 	}
@@ -151,9 +151,9 @@ function addBlock($phone, &$error, &$message)
 *   True unless an error occurred.
 */
 
-function removeBlock($id, &$error, &$message)
+function removeBlockedNumber($id, &$error, &$message)
 {
-	$sql = "DELETE FROM blocks WHERE id='".addslashes($id)."'";
+	$sql = "DELETE FROM blocked_numbers WHERE id='".addslashes($id)."'";
 	if (!db_db_command($sql, $error)) {
 		return false;
 	}

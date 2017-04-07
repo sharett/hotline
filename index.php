@@ -73,6 +73,7 @@ if (count($comms)) {
 			  <p>
 				<a class="btn btn-success" href="contact.php" role="button">Call / Text</a>
 				<a class="btn btn-success" href="hotline_staff.php" role="button">Staff</a>
+				<a class="btn btn-success" href="hotline_blocks.php" role="button">Blocks</a>
 				<a class="btn btn-success" href="hotline_languages.php" role="button">Languages</a>
 			  </p>
 		   </div>

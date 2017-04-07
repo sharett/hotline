@@ -9,10 +9,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `blocks`
+-- Table structure for table `blocked_numbers`
 --
 
-CREATE TABLE `blocks` (
+CREATE TABLE `blocked_numbers` (
   `id` int(11) UNSIGNED NOT NULL,
   `phone` varchar(25) NOT NULL,
   `added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -135,9 +135,9 @@ INSERT INTO `languages` (`id`, `language`, `digit`, `prompt`, `voicemail`, `voic
 --
 
 --
--- Indexes for table `blocks`
+-- Indexes for table `blocked_numbers`
 --
-ALTER TABLE `blocks`
+ALTER TABLE `blocked_numbers`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `phone` (`phone`);
 

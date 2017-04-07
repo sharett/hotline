@@ -759,7 +759,7 @@ function sms_loadLanguageById($id, &$language, &$error)
 
 function sms_isNumberBlocked($phone, &$error)
 {
-	$sql = "SELECT COUNT(*) FROM blocks WHERE phone='".addslashes($phone)."'";
+	$sql = "SELECT COUNT(*) FROM blocked_numbers WHERE phone='".addslashes($phone)."'";
 	if (!db_db_getone($sql, $count, $error)) {
 		return false;
 	}
