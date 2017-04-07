@@ -177,8 +177,8 @@ function processBroadcastText($from, $body, &$message, &$error)
 	if ($body_lower == 'yes' || $body_lower == 'y') {
 		// load the latest broadcast that requested a response
 		if (sms_getBroadcastResponse($broadcast_response, $error) && $broadcast_response) {
-			// add them to the list
-			sms_addToBroadcastResponse($broadcast_response['id'], $from, $error);
+			// add them to the list and update them with messages they missed
+			sms_addToBroadcastResponse($broadcast_response, $from, $error);
 		}
 	} else {
 		// do nothing - it is added to the history for the coordinator to view

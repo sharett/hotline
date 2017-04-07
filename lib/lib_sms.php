@@ -610,9 +610,9 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 /**
 * Add a phone number to a broadcast response list
 *
-* ...
+* If added successfully, catches the user up on all the messages they missed.
 * 
-* @param int $communications_id
+* @param array $broadcast_response
 *   The broadcast response they are responding to
 * @param string $from
 *   The phone number to add
@@ -623,8 +623,10 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 *   True unless an error occurred.
 */
 
-function sms_addToBroadcastResponse($communications_id, $from, &$error)
+function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 {
+	global $BROADCAST_CALLER_ID;
+	
 	// look up the broadcast id for this number
 	$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($from)."' AND status='active'";
 	if (!db_db_getone($sql, $broadcast_id, $error)) {
@@ -639,7 +641,7 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 	
 	// have they already sent yes for this broadcast?
 	$sql = "SELECT COUNT(*) FROM broadcast_responses WHERE ".
-		"communications_id='".addslashes($communications_id)."' AND ".
+		"communications_id='".addslashes($broadcast_response['id'])."' AND ".
 		"broadcast_id='".addslashes($broadcast_id)."'";
 	if (!db_db_getone($sql, $broadcast_response_id, $error)) {
 		return false;
@@ -652,10 +654,43 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 	
 	// no, add them to the list
 	$sql = "INSERT INTO broadcast_responses SET ".
-		"communications_id='".addslashes($communications_id)."',".
+		"communications_id='".addslashes($broadcast_response['id'])."',".
 		"broadcast_id='".addslashes($broadcast_id)."'";
 	if (!db_db_command($sql, $error)) {
 		return false;
+	}
+	
+	// catch them up on the messages they missed, if any
+	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE_UPDATE' ".
+		"AND communication_time > '".addslashes($broadcast_response['communication_time'])."' ".
+		"ORDER BY communication_time";
+	if (!db_db_query($sql, $messages, $error)) {
+		return false;
+	}
+	
+	if (count($messages)) {
+		// there are messages, catch them up
+		$update_message = "Catching you up on messages you missed: ";
+		
+		foreach ($messages as $message) {
+			$message_timestamp = strtotime($message['communication_time']);
+			// was this message sent today?
+			if (date("Y-m-d") == substr($message['communication_time'], 0, 10)) {
+				// yes, just provide the time it was sent
+				$message_time = date("h:i a", $message_timestamp);
+			} else {
+				// no, provide the date and time
+				$message_time = date("m/d/y h:i a", $message_timestamp);
+			}
+			
+			$update_message .= $message_time . ": " . $message['body'] . ' ';
+		}
+		
+		// send them the messages
+		$numbers = array($from);
+		if (!sms_send($numbers, $update_message, $error, $BROADCAST_CALLER_ID)) {
+			return false;
+		}
 	}
 	
 	return true;
