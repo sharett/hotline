@@ -191,35 +191,40 @@ ALTER TABLE `languages`
 --
 
 --
+-- AUTO_INCREMENT for table `blocked_numbers`
+--
+ALTER TABLE `blocked_numbers`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+--
 -- AUTO_INCREMENT for table `broadcast`
 --
 ALTER TABLE `broadcast`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `broadcast_responses`
 --
 ALTER TABLE `broadcast_responses`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `call_times`
 --
 ALTER TABLE `call_times`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `communications`
 --
 ALTER TABLE `communications`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=358;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `contacts`
 --
 ALTER TABLE `contacts`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `errors`
 --
 ALTER TABLE `errors`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `languages`
 --
@@ -235,3 +240,5 @@ ALTER TABLE `languages`
 ALTER TABLE `call_times`
   ADD CONSTRAINT `call_times_ibfk_1` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`),
   ADD CONSTRAINT `call_times_ibfk_2` FOREIGN KEY (`language_id`) REFERENCES `languages` (`id`);
+
+COMMIT;
