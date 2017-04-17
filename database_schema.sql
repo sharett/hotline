@@ -116,6 +116,7 @@ CREATE TABLE `languages` (
   `language` varchar(25) NOT NULL,
   `keypress` int(1) UNSIGNED NOT NULL,
   `prompt` varchar(255) NOT NULL,
+  `promt_media_url` varchar(255) NOT NULL,
   `voicemail` varchar(255) NOT NULL DEFAULT '',
   `voicemail_received` varchar(255) NOT NULL DEFAULT '',
   `twilio_code` varchar(15) NOT NULL
