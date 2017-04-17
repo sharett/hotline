@@ -697,12 +697,12 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 }
 
 /**
-* Load a language table entry by language digit
+* Load a language table entry by language key press
 *
 * ...
 * 
-* @param int $digit
-*   The language digit to load
+* @param int $keypress
+*   The language keypress to load
 * @param array &$language
 *   Set to the loaded language.
 * @param string &$error
@@ -712,24 +712,24 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 *   True unless an error occurred.
 */
 
-function sms_loadLanguageByDigit($digit, &$language, &$error)
+function sms_loadLanguageByKeypress($keypress, &$language, &$error)
 {	
-	// first, does the digit exist?
-	if ($digit) {
-		$sql = "SELECT COUNT(*) FROM languages WHERE digit='". addslashes($digit) . "'";
+	// first, does the keypress exist?
+	if ($keypress) {
+		$sql = "SELECT COUNT(*) FROM languages WHERE keypress='". addslashes($keypress) . "'";
 		if (!db_db_getone($sql, $exists, $error)) {
 			return false;
 		}
 		
 		if (!$exists) {
-			$digit = 1;  // default to the first language
+			$keypress = 1;  // default to the first language
 		}
 	} else {
-		$digit= 1;
+		$keypress= 1;
 	}
 	
 	// now load the record
-	$sql = "SELECT * FROM languages WHERE digit='". addslashes($digit) . "'";
+	$sql = "SELECT * FROM languages WHERE keypress='". addslashes($keypress) . "'";
 	if (!db_db_getrow($sql, $language, $error)) {
 		return false;
 	}
