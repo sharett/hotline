@@ -26,7 +26,7 @@ $from = $_REQUEST['From'];
 $language_id = $_REQUEST['language_id'];
 
 // load language data
-sms_loadLanguage($language_id, $language, $error);
+sms_loadLanguageById($language_id, $language, $error);
 
 if (!$url) {
 	// no voicemail!

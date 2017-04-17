@@ -137,10 +137,7 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 	$error = '';
 	foreach ($numbers as $number) {
         try {
-			// don't initiate a call if another with the same to and from numbers
-			// is in progress
-			
-			// create the call			
+			// create the call		
 			$call = $client->calls->create($number, $from,
 				array(
 					"url" => $url,
@@ -166,8 +163,10 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 * Calls with the statuses queued, ringing or in-progress are considered
 * active.
 * 
-* @param string $phone
-*   The phone number that must be the from or to number in the calls
+* @param string $from
+*   The phone number that must be the from number in the calls
+* @param string $to
+*   The phone number that must be the to number in the calls
 * @param array &$calls
 *   Filled with the array of active calls
 * @param string &$error
@@ -177,7 +176,7 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 *   True - errors reported in $error parameter.
 */
 
-function sms_getActiveCalls($phone, &$calls, &$error)
+function sms_getActiveCalls($from, $to, &$calls, &$error)
 {
 	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN;
 	
@@ -187,14 +186,20 @@ function sms_getActiveCalls($phone, &$calls, &$error)
 	// retrieve the calls
 	$error = '';
 	$calls = array();
-
-	_sms_getCallInfo(array("status" => "queued", "to" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "ringing", "to" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "in-progress", "to" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "queued", "from" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "ringing", "from" => $phone), $client, $calls, $error);
-	_sms_getCallInfo(array("status" => "in-progress", "from" => $phone), $client, $calls, $error);
-
+	
+	$statuses = array("queued", "ringing", "in-progress");
+	foreach ($statuses as $status) {
+		// for each status type, build an array that requests a from or to number, or both
+		$read_array = array("status" => $status);
+		if ($from) {
+			$read_array['from'] = $from;
+		}
+		if ($to) {
+			$read_array['to'] = $to;
+		}
+		_sms_getCallInfo($read_array, $client, $calls, $error);
+	}
+	
 	return true;
 }
 
@@ -235,6 +240,42 @@ function _sms_getCallInfo($read_array, &$client, &$calls, &$error)
 		// catch errors
 		$error .= $e->getMessage() . "\n";
 		return false;
+	}
+	
+	return true;
+}
+
+/**
+* Gets the details of a particular queue
+*
+* ...
+* 
+* @param string $name
+*   The queue's to retrieve's "friendlyName"
+* @param object &$queue
+*   Set to the queue object
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred
+*/
+
+function sms_getQueueInfo($name, &$queue, &$error)
+{
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN;
+	
+	// create a Twilio client
+	$client = new Twilio\Rest\Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
+	
+	// loop over the list of queues and find the matching one
+	$queue = '';
+	foreach ($client->queues->read() as $queue_query) {
+		if ($queue_query->friendlyName == $name) {
+			// the name matches
+			$queue = $queue_query;
+			break;
+		}
 	}
 	
 	return true;
@@ -569,9 +610,9 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 /**
 * Add a phone number to a broadcast response list
 *
-* ...
+* If added successfully, catches the user up on all the messages they missed.
 * 
-* @param int $communications_id
+* @param array $broadcast_response
 *   The broadcast response they are responding to
 * @param string $from
 *   The phone number to add
@@ -582,8 +623,10 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 *   True unless an error occurred.
 */
 
-function sms_addToBroadcastResponse($communications_id, $from, &$error)
+function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 {
+	global $BROADCAST_CALLER_ID;
+	
 	// look up the broadcast id for this number
 	$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($from)."' AND status='active'";
 	if (!db_db_getone($sql, $broadcast_id, $error)) {
@@ -598,7 +641,7 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 	
 	// have they already sent yes for this broadcast?
 	$sql = "SELECT COUNT(*) FROM broadcast_responses WHERE ".
-		"communications_id='".addslashes($communications_id)."' AND ".
+		"communications_id='".addslashes($broadcast_response['id'])."' AND ".
 		"broadcast_id='".addslashes($broadcast_id)."'";
 	if (!db_db_getone($sql, $broadcast_response_id, $error)) {
 		return false;
@@ -611,22 +654,55 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 	
 	// no, add them to the list
 	$sql = "INSERT INTO broadcast_responses SET ".
-		"communications_id='".addslashes($communications_id)."',".
+		"communications_id='".addslashes($broadcast_response['id'])."',".
 		"broadcast_id='".addslashes($broadcast_id)."'";
 	if (!db_db_command($sql, $error)) {
 		return false;
+	}
+	
+	// catch them up on the messages they missed, if any
+	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE_UPDATE' ".
+		"AND communication_time > '".addslashes($broadcast_response['communication_time'])."' ".
+		"ORDER BY communication_time";
+	if (!db_db_query($sql, $messages, $error)) {
+		return false;
+	}
+	
+	if (count($messages)) {
+		// there are messages, catch them up
+		$update_message = "Catching you up on messages you missed: ";
+		
+		foreach ($messages as $message) {
+			$message_timestamp = strtotime($message['communication_time']);
+			// was this message sent today?
+			if (date("Y-m-d") == substr($message['communication_time'], 0, 10)) {
+				// yes, just provide the time it was sent
+				$message_time = date("h:i a", $message_timestamp);
+			} else {
+				// no, provide the date and time
+				$message_time = date("m/d/y h:i a", $message_timestamp);
+			}
+			
+			$update_message .= $message_time . ": " . $message['body'] . ' ';
+		}
+		
+		// send them the messages
+		$numbers = array($from);
+		if (!sms_send($numbers, $update_message, $error, $BROADCAST_CALLER_ID)) {
+			return false;
+		}
 	}
 	
 	return true;
 }
 
 /**
-* Load a language table entry
+* Load a language table entry by language key press
 *
 * ...
 * 
-* @param int $id
-*   The language id to load
+* @param int $keypress
+*   The language keypress to load
 * @param array &$language
 *   Set to the loaded language.
 * @param string &$error
@@ -636,29 +712,94 @@ function sms_addToBroadcastResponse($communications_id, $from, &$error)
 *   True unless an error occurred.
 */
 
-function sms_loadLanguage($id, &$language, &$error)
+function sms_loadLanguageByKeypress($keypress, &$language, &$error)
 {	
+	// first, does the keypress exist?
+	if ($keypress) {
+		$sql = "SELECT COUNT(*) FROM languages WHERE keypress='". addslashes($keypress) . "'";
+		if (!db_db_getone($sql, $exists, $error)) {
+			return false;
+		}
+		
+		if (!$exists) {
+			$keypress = 1;  // default to the first language
+		}
+	} else {
+		$keypress= 1;
+	}
+	
+	// now load the record
+	$sql = "SELECT * FROM languages WHERE keypress='". addslashes($keypress) . "'";
+	if (!db_db_getrow($sql, $language, $error)) {
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+* Load a language table entry by language id
+*
+* ...
+*
+* @param int $id
+*   The language id to load
+* @param array &$language
+*   Set to the loaded language.
+* @param string &$error
+*   An error if one occurred.
+*
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_loadLanguageById($id, &$language, &$error)
+{
 	// first, does the id exist?
 	if ($id) {
 		$sql = "SELECT COUNT(*) FROM languages WHERE id='". addslashes($id) . "'";
 		if (!db_db_getone($sql, $exists, $error)) {
 			return false;
 		}
-		
+
 		if (!$exists) {
 			$id = 1;  // default to the first language
 		}
 	} else {
 		$id = 1;
 	}
-	
+
 	// now load the record
 	$sql = "SELECT * FROM languages WHERE id='". addslashes($id) . "'";
 	if (!db_db_getrow($sql, $language, $error)) {
 		return false;
 	}
-	
+
 	return true;
+}
+
+/**
+* Is a phone number blocked?
+*
+* ...
+* 
+* @param string $phone
+*   The phone number to check
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True if the phone number was blocked.
+*/
+
+function sms_isNumberBlocked($phone, &$error)
+{
+	$sql = "SELECT COUNT(*) FROM blocked_numbers WHERE phone='".addslashes($phone)."'";
+	if (!db_db_getone($sql, $count, $error)) {
+		return false;
+	}
+	
+	return ($count > 0);
 }
 
 ?>

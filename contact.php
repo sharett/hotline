@@ -120,6 +120,10 @@ if ($ph && $ph_valid) {
 ?>
 		  <h3 class="sub-header">Broadcast log (<?php echo $BROADCAST_CALLER_ID ?>)</h3>
 <?php
+	} elseif ($ph == $HOTLINE_CALLER_ID) {
+?>
+		  <h3 class="sub-header">Hotline log (<?php echo $HOTLINE_CALLER_ID ?>)</h3>
+<?php
 	} else {
 ?>
           <h3 class="sub-header">Log</h3>

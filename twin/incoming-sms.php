@@ -115,6 +115,12 @@ function processHotlineText($from, $body, &$message, &$error)
 		$from_descriptive = " ({$contact_name})";
 	}
 
+	// is this number blocked?
+	if (sms_isNumberBlocked($from, $error)) {
+		// number is blocked, don't forward it or reply
+		return true;
+	}
+
 	// was anything sent?
 	if ($from && $body) {
 		// yes
@@ -171,8 +177,8 @@ function processBroadcastText($from, $body, &$message, &$error)
 	if ($body_lower == 'yes' || $body_lower == 'y') {
 		// load the latest broadcast that requested a response
 		if (sms_getBroadcastResponse($broadcast_response, $error) && $broadcast_response) {
-			// add them to the list
-			sms_addToBroadcastResponse($broadcast_response['id'], $from, $error);
+			// add them to the list and update them with messages they missed
+			sms_addToBroadcastResponse($broadcast_response, $from, $error);
 		}
 	} else {
 		// do nothing - it is added to the history for the coordinator to view

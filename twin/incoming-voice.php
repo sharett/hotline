@@ -17,13 +17,13 @@ db_databaseConnect();
 sms_storeCallData($_REQUEST, $error);
 
 // load the list of languages
-if (!db_db_query("SELECT * FROM languages", $languages, $error)) {
+if (!db_db_query("SELECT * FROM languages ORDER BY keypress", $languages, $error)) {
     // error!
 }
 
 $response = new Twilio\Twiml();
 
-// wait for a digit to be pressed
+// wait for a key to be pressed
 $gather = $response->gather(array(
 	'action' => 'incoming-voice-dial.php',
 	'numDigits' => 1,

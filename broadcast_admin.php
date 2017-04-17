@@ -57,8 +57,8 @@ if ($action != 'list') {
           <form id="text-controls" action="broadcast_admin.php" method="POST">
 		   <input type="hidden" name="action" value="import">
 		   <div class="form-group">
-			<label for="text-message">Import numbers, one per line, or comma separated</label>
-			<textarea class="form-control" name="numbers" rows="3" cols="30"><?php echo $numbers ?></textarea>
+			<label for="import-numbers">Import numbers, one per line, or comma separated</label>
+			<textarea class="form-control" name="numbers" id="import-numbers" rows="3" cols="30"><?php echo $numbers ?></textarea>
  		   </div>		 
 		   <button class="btn btn-success" id="button-text">Import</button>
 		  </form>
@@ -67,8 +67,8 @@ if ($action != 'list') {
           <form id="text-controls" action="broadcast_admin.php" method="POST">
 		   <input type="hidden" name="action" value="remove">
 		   <div class="form-group">
-			<label for="text-message">Numbers to remove, one per line, or comma separated</label>
-			<textarea class="form-control" name="numbers" rows="2" cols="30"><?php echo $numbers ?></textarea>
+			<label for="remove-numbers">Numbers to remove, one per line, or comma separated</label>
+			<textarea class="form-control" name="numbers" id="remove-numbers" rows="2" cols="30"><?php echo $numbers ?></textarea>
  		   </div>		 
 		   <button class="btn btn-warning" id="button-text">Remove</button>
 		  </form>

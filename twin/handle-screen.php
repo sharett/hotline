@@ -21,7 +21,7 @@ $response = new Twilio\Twiml();
 // did the user push 1 to accept?
 if ($user_pushed == 1) {
 	// yes, does the hotline queue still have someone in it?
-	if (getQueueInfo('hotline', $queue, $error) && $queue && $queue->currentSize > 0) {
+	if (sms_getQueueInfo('hotline', $queue, $error) && $queue && $queue->currentSize > 0) {
 		// yes, connect them
 		
 		// announce the connection
@@ -48,41 +48,5 @@ $response->hangup();
 echo $response;
 
 db_databaseDisconnect();
-
-/**
-* Gets the details of a particular queue
-*
-* ...
-* 
-* @param string $name
-*   The queue's to retrieve's "friendlyName"
-* @param object &$queue
-*   Set to the queue object
-* @param string &$error
-*   An error if one occurred.
-*   
-* @return bool
-*   True unless an error occurred
-*/
-
-function getQueueInfo($name, &$queue, &$error)
-{
-	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN;
-	
-	// create a Twilio client
-	$client = new Twilio\Rest\Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
-	
-	// loop over the list of queues and find the matching one
-	$queue = '';
-	foreach ($client->queues->read() as $queue_query) {
-		if ($queue_query->friendlyName == $name) {
-			// the name matches
-			$queue = $queue_query;
-			break;
-		}
-	}
-	
-	return true;
-}
 
 ?>

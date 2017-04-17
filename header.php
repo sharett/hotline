@@ -12,10 +12,9 @@
 db_databaseConnect();
 
 $pages = array("Broadcast" => "broadcast.php", 
+    "Hotline" => "hotline_staff.php",
     "Call / Text" => "contact.php", 
-    "Staff" => "staff.php", "Languages" => "languages.php", 
-    "Log" => "log.php", 
-	"Database" => "sanctdb/");
+    "Log" => "log.php");
 
 ?>
 <!DOCTYPE html>
@@ -58,7 +57,7 @@ $pages = array("Broadcast" => "broadcast.php",
 foreach ($pages as $title => $page) {
 	// remove anything after an underscore, to allow for subpages
 	$main_page = removeSubpage($_SERVER['PHP_SELF']);
-    if ($main_page == '/' . $page) {
+    if ($main_page == '/' . removeSubpage($page)) {
 ?>
             <li class="active"><a href="<?php echo $page ?>"><?php echo $title ?> <span class="sr-only">(current)</span></a></li>
 <?php
