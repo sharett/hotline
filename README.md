@@ -89,6 +89,15 @@ Text messages:
   * Text is forwarded to all hotline staff on duty, in this format: “Hotline text from (sender's phone number): (original text)”
   * Response from initial text, or after a week of no texts received from the person: “Your message has been received.  Someone will respond shortly.”
 
+## development guidelines
+
+* new feature development:
+ * Branch or fork to a a branch named after the desired change
+ * Implement
+ * Merge master into the branch if needed to ensure clean merge
+ * Code review/ pull request
+ * On acceptance merge branch into master
+
 ## To do
 
 * Consider a template library to separate the logic from the presentation.
