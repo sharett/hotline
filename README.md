@@ -92,11 +92,11 @@ Text messages:
 ## development guidelines
 
 * new feature development:
- * Branch or fork to a a branch named after the desired change
- * Implement
- * Merge master into the branch if needed to ensure clean merge
- * Code review/ pull request
- * On acceptance merge branch into master
+  * Branch or fork to a a branch named after the desired change
+  * Implement
+  * Merge master into the branch if needed to ensure clean merge
+  * Code review/ pull request
+  * On acceptance merge branch into master
 
 ## To do
 
