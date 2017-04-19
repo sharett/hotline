@@ -217,7 +217,7 @@ foreach ($contacts as $contact) {
 			<label for="text-message">Add staff</label>
 			<textarea class="form-control" name="staff" rows="3" cols="30"></textarea>
 			<p class="help-block">
-			  <b>Format:</b> name,phone number,day,earliest time,latest time,language digit,texts (0 or 1).
+			  <b>Format:</b> name,phone number,day,earliest time,latest time,language keypress,texts (0 or 1).
 			  Only name and phone number required.
 			</p>
  		   </div>		 
@@ -269,7 +269,7 @@ function addStaff($staff, &$error, &$message)
 		// 2 = day
 		// 3 = earliest time
 		// 4 = latest time
-		// 5 = language digit
+		// 5 = language keypress
 		// 6 = texts (0 or 1).
 		
 		// make sure the number is in E164 format
@@ -326,7 +326,7 @@ function addStaff($staff, &$error, &$message)
 				$staff_array[4] = '11:59 pm';
 			}
 			if (!$staff_array[5]) {
-				// default language digit
+				// default language keypress
 				$staff_array[5] = 2;
 			}
 			if ($staff_array[6] == '') {
@@ -334,9 +334,9 @@ function addStaff($staff, &$error, &$message)
 				$staff_array[6] = 1;
 			}
 			
-		    // get language_id from the language_digit
+		    // get language_id from the language_keypress
 		    $language_id = "1";
-		    $sql = "SELECT id FROM languages WHERE digit='". addslashes($staff_array[5]) . "'";
+		    $sql = "SELECT id FROM languages WHERE keypress='". addslashes($staff_array[5]) . "'";
 		    if (!db_db_getone($sql, $language_id, $db_error)){
 		        $error = "{$staff_line}: {$db_error}<br />\n";
 		        continue;
