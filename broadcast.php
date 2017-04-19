@@ -8,6 +8,13 @@
 require_once 'config.php';
 require_once $LIB_BASE . 'lib_sms.php';
 
+// required to avoid output buffering problems when sending progress marks
+// as texts are sent
+header('Content-type: text/html; charset=utf-8');
+
+// output a progress mark every X texts sent
+$PROGRESS_MARK_EVERY = 3;
+
 include 'header.php';
 
 // URL parameters
@@ -180,7 +187,7 @@ include 'footer.php';
 
 function sendBroadcastText($text, $request_response, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID;
+	global $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY;
 	
 	$error = '';
 	$message = '';
@@ -200,9 +207,6 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 		return false;
 	}
 	
-	//$message = "Disabled, would have sent '{$text}'.";
-	//return true;
-	
 	// load the broadcast numbers
 	$sql = "SELECT phone FROM broadcast WHERE status='active'";
 	if (!db_db_getcol($sql, $numbers, $error)) {
@@ -215,7 +219,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	}
 	
 	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID)) {
+	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY)) {
 		return false;
 	}
 	
@@ -252,7 +256,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 
 function sendBroadcastResponseText($text, $communications_id, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID;
+	global $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY;
 	
 	$error = '';
 	$message = '';
@@ -274,7 +278,7 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 	}
 	
 	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID)) {
+	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY)) {
 		return false;
 	}
 	

@@ -70,14 +70,22 @@ function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
 *   An error if one occurred.
 * @param string $from = ''
 *   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
+* @param string $from = ''
+*   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
+* @param int $progress_every = 0
+*   If nonzero, displays a progress mark after this many messages are sent.
 *   
 * @return bool
 *   True if sent.
 */
 
-function sms_send($numbers, $text, &$error, $from = '')
+function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 {
 	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
+	
+	if ($progress_every) {
+		echo '<p>Sending ';
+	}
 	
 	// default from address
 	if (!$from) {
@@ -89,7 +97,9 @@ function sms_send($numbers, $text, &$error, $from = '')
 
 	// send the messages
 	$error = '';
+	$count = 0;
 	foreach ($numbers as $number) {
+		set_time_limit(30);
         try {
             $client->messages->create($number,
 				array('from' => $from,
@@ -98,8 +108,21 @@ function sms_send($numbers, $text, &$error, $from = '')
         } catch (Services_Twilio_RestException $e) {
             $error .= $number . ": " . $e->getMessage() . "\n";
         }
+        
+        // display progress?
+        if ($progress_every) {
+			if (++$count % $progress_every == 0) {
+				echo "." . str_repeat(' ', 1024);
+				flush();
+				ob_flush();
+			}
+		}
 	}
-
+	
+	if ($progress_every) {
+		echo '</p>';
+	}
+	
 	return true;
 }
 
