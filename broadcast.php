@@ -205,7 +205,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	}
 	
 	// load the broadcast numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active' LIMIT 50";
+	$sql = "SELECT phone FROM broadcast WHERE status='active'";
 	if (!db_db_getcol($sql, $numbers, $error)) {
 		return false;
 	}
