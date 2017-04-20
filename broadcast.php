@@ -12,9 +12,6 @@ require_once $LIB_BASE . 'lib_sms.php';
 // as texts are sent
 header('Content-type: text/html; charset=utf-8');
 
-// output a progress mark every X texts sent
-$PROGRESS_MARK_EVERY = 3;
-
 include 'header.php';
 
 // URL parameters
@@ -187,7 +184,7 @@ include 'footer.php';
 
 function sendBroadcastText($text, $request_response, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY;
+	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
 	
 	$error = '';
 	$message = '';
@@ -208,7 +205,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	}
 	
 	// load the broadcast numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active'";
+	$sql = "SELECT phone FROM broadcast WHERE status='active' LIMIT 50";
 	if (!db_db_getcol($sql, $numbers, $error)) {
 		return false;
 	}
@@ -219,7 +216,8 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	}
 	
 	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY)) {
+	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
+				  $BROADCAST_PROGRESS_MARK_EVERY)) {
 		return false;
 	}
 	
@@ -232,7 +230,8 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	);
 	sms_storeCallData($data, $error);
 
-	$message = "Text sent to " . count($numbers) . " numbers.";
+	$message = "Text sent to " . count($numbers) . " numbers" .
+		($error ? ' (except errors listed above).' : '.');
 	return true;
 }
 
@@ -256,7 +255,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 
 function sendBroadcastResponseText($text, $communications_id, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY;
+	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
 	
 	$error = '';
 	$message = '';
@@ -278,7 +277,8 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 	}
 	
 	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, $PROGRESS_MARK_EVERY)) {
+	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
+	              $BROADCAST_PROGRESS_MARK_EVERY)) {
 		return false;
 	}
 	

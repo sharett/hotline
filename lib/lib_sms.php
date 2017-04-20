@@ -76,7 +76,7 @@ function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
 *   If nonzero, displays a progress mark after this many messages are sent.
 *   
 * @return bool
-*   True if sent.
+*   True unless no messages were sent successfully.
 */
 
 function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
@@ -98,15 +98,19 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 	// send the messages
 	$error = '';
 	$count = 0;
+	$error_count = 0;
 	foreach ($numbers as $number) {
+		// reset the execution time limit to insure we have time to send all the messages
 		set_time_limit(30);
+		
         try {
             $client->messages->create($number,
 				array('from' => $from,
                       'body' => $text)
 			);
-        } catch (Services_Twilio_RestException $e) {
-            $error .= $number . ": " . $e->getMessage() . "\n";
+        } catch (Exception $e) {
+            $error .= $number . ": " . $e->getMessage() . "<br>\n";
+            $error_count++;
         }
         
         // display progress?
@@ -123,7 +127,12 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 		echo '</p>';
 	}
 	
-	return true;
+	// return true unless all messages were not sent
+	if ($error_count == $count) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
 /**
@@ -172,7 +181,7 @@ function sms_placeCalls($numbers, $url, $from, &$error)
 					//)
 				)
 			);
-        } catch (Services_Twilio_RestException $e) {
+        } catch (Exception $e) {
             $error .= $number . ": " . $e->getMessage() . "\n";
         }
 	}
@@ -259,7 +268,7 @@ function _sms_getCallInfo($read_array, &$client, &$calls, &$error)
 				"EndTime" => $call->endTime->format("Y-m-d H:i:s O"),
 			);
 		}
-	} catch (Services_Twilio_RestException $e) {
+	} catch (Exception $e) {
 		// catch errors
 		$error .= $e->getMessage() . "\n";
 		return false;
