@@ -8,17 +8,22 @@
 require_once 'config.php';
 require_once $LIB_BASE . 'lib_sms.php';
 
+// required to avoid output buffering problems when sending progress marks
+// as texts are sent
+header('Content-type: text/html; charset=utf-8');
+
 include 'header.php';
 
 // URL parameters
 $action = $_REQUEST['action'];
 $numbers = $_POST['numbers'];
+$send_welcome = ($_POST['send_welcome'] == 'on');
 
 // *** ACTIONS ***
 
 // import?
 if ($action == 'import') {
-	importNumbers($numbers, $error, $success);
+	importNumbers($numbers, $error, $success, $send_welcome);
 // remove?
 } else if ($action == 'remove') {
 	removeNumbers($numbers, $error, $success);
@@ -60,6 +65,11 @@ if ($action != 'list') {
 			<label for="import-numbers">Import numbers, one per line, or comma separated</label>
 			<textarea class="form-control" name="numbers" id="import-numbers" rows="3" cols="30"><?php echo $numbers ?></textarea>
  		   </div>		 
+ 		   <div class="checkbox">
+			 <label>
+			   <input type="checkbox" name="send_welcome" <?php if ($send_welcome) { echo 'checked'; } ?>> Send a welcome message to each number
+			 </label>
+		   </div> 
 		   <button class="btn btn-success" id="button-text">Import</button>
 		  </form>
           
@@ -69,7 +79,7 @@ if ($action != 'list') {
 		   <div class="form-group">
 			<label for="remove-numbers">Numbers to remove, one per line, or comma separated</label>
 			<textarea class="form-control" name="numbers" id="remove-numbers" rows="2" cols="30"><?php echo $numbers ?></textarea>
- 		   </div>		 
+ 		   </div>
 		   <button class="btn btn-warning" id="button-text">Remove</button>
 		  </form>
 <?php
@@ -98,14 +108,16 @@ include 'footer.php';
 *   Errors if any occurred.
 * @param string &$message
 *   An informational message if appropriate.
+* @param bool $send_welcome = true
+*   If true, sends a welcome message to each number added.
 *   
 * @return bool
 *   True if any numbers were provided.
 */
 
-function importNumbers($numbers, &$error, &$message)
+function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_WELCOME; 
+	global $BROADCAST_CALLER_ID, $BROADCAST_WELCOME, $BROADCAST_PROGRESS_MARK_EVERY; 
 	
 	$error = '';
 	$message = '';
@@ -123,7 +135,7 @@ function importNumbers($numbers, &$error, &$message)
 		return false;
 	}
 	
-	$success_count = 0;
+	$success_numbers = array();
 	foreach ($numbers as $number) {
 		$number = trim($number);
 		
@@ -151,21 +163,19 @@ function importNumbers($numbers, &$error, &$message)
 			continue;
 		}
 		
-		// send a welcome message if set
-		if ($BROADCAST_WELCOME) {
-			$welcome_numbers = array($number);
-			if (!sms_send($welcome_numbers, $BROADCAST_WELCOME, $error, $BROADCAST_CALLER_ID)) {
-				$error .= "{$number}: Failed to send welcome message.<br />\n";
-				continue;
-			}
-		}
-		
 		// import successful
-		$success_count++;
+		$success_numbers[] = $number;
+	}
+	
+	// send the welcome messages if set
+	if ($send_welcome && $BROADCAST_WELCOME) {
+		sms_send($success_numbers, $BROADCAST_WELCOME, $send_error, 
+				 $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY);
+		$error .= $send_error;
 	}
 	
 	// report on the status of the import
-	$error_count = count($numbers) - $success_count;
+	$error_count = count($numbers) - count($success_numbers);
 	$message = "Imported {$success_count} numbers successfully. ";
 	if ($error_count) {
 		$message .= "{$error_count} numbers were invalid or already in the database.";
