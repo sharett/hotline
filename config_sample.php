@@ -50,6 +50,9 @@ $BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
 // List users authorized to send broadcast texts here.  Leave blank to allow all users.
 $BROADCAST_AUTHORIZED_USERS = array();
 
+// If nonzero, outputs a progress mark every X texts sent
+$BROADCAST_PROGRESS_MARK_EVERY = 3;
+
 // **** HOTLINE ****
 
 // Main hotline number

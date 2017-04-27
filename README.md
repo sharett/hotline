@@ -58,6 +58,9 @@ It is not production ready and is very much in progress.
 
 * By default, English and Spanish are set - edit the "languages" table to modify this.  The Twilio code is the language that the voice "alice" will use to speak the text.
 
+* The broadcast texting system sends progress marks to the browser as texts are being sent.  It can take some time to send the texts.  You may need to configure the web server and PHP to not buffer these progress marks.
+  * For Nginx, add or update "gzip off;" and "proxy_buffering off;" to the /etc/nginx/nginx.conf file.
+
 ## Usage
 
 The broadcast interface supports sending, importing and removing numbers.  When importing numbers, each one is sent a welcome message with instructions about how to stop receiving texts.
