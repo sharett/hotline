@@ -834,4 +834,26 @@ function sms_isNumberBlocked($phone, &$error)
 	return ($count > 0);
 }
 
+/**
+* Based on the media string either says the string in a robot voice or plays the url in the string
+*
+* ...
+* 
+* @param string $media
+*   The queue's to retrieve's "friendlyName"
+*
+* @return bool
+*   True unless an error occurred
+*/
+
+function sms_playOrSay(&$gather, $media, $voice_code)
+{
+    if (filter_var($url, FILTER_VALIDATE_URL) === TRUE) {
+        $gather->play($media);
+    } else {
+        $gather->say($media,
+		array('voice' => 'alice', 'language' => $voice_code));
+    }
+}
+
 ?>

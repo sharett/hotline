@@ -38,13 +38,7 @@ $gather->say($HOTLINE_INTRO,
 
 // and each of the language options
 foreach ($languages as $language) {
-    if ($language['prompt_media_url']) {
-        $gather->play($language['prompt_media_url']);
-    } else {
-        $gather->say($language['prompt'],
-		array('voice' => 'alice', 'language' => $language['twilio_code'])
-    );
-    }
+    sms_playOrSay($gather, $language['prompt'], language['twilio_code']);
 }
 
 $gather->say($HOTLINE_STRAIGHT_TO_VOICEMAIL, array('voice' => 'alice'));
