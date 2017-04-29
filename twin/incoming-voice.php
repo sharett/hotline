@@ -32,16 +32,14 @@ $gather = $response->gather(array(
 );
 
 // say the hotline intro
-$gather->say($HOTLINE_INTRO,
-	array('voice' => 'alice')
-);
+sms_playOrSay($gather, $HOTLINE_INTRO);
 
 // and each of the language options
 foreach ($languages as $language) {
     sms_playOrSay($gather, $language['prompt'], language['twilio_code']);
 }
 
-$gather->say($HOTLINE_STRAIGHT_TO_VOICEMAIL, array('voice' => 'alice'));
+sms_playOrSay($gather, $HOTLINE_STRAIGHT_TO_VOICEMAIL);
 
 // and handle a timeout
 $response->redirect('incoming-voice-dial.php?Digits=TIMEOUT',
