@@ -839,11 +839,13 @@ function sms_isNumberBlocked($phone, &$error)
 *
 * ...
 * 
-* @param string $media
-*   The queue's to retrieve's "friendlyName"
+* @param string $gather
+*   The twilio object to call say or play from
+* @param string $string
+*   A string of text which could be a URL which either makes a robot voice say the string or twilio play the URL 
+* @param string $voice_code
+*   The String for the twilio voice code which indicates which language the text is 
 *
-* @return bool
-*   True unless an error occurred
 */
 
 function sms_playOrSay(&$gather, $string, $voice_code = null)
@@ -851,7 +853,7 @@ function sms_playOrSay(&$gather, $string, $voice_code = null)
     if (filter_var($string, FILTER_VALIDATE_URL) === TRUE) {
         $gather->play($string);
     } else {
-        if (!$voice_code) $voice_code = 'en';
+        if (!$voice_code) $voice_code = 'en-US';
         $gather->say($string,
 		array('voice' => 'alice', 'language' => $voice_code));
     }
