@@ -36,7 +36,7 @@ sms_playOrSay($gather, $HOTLINE_INTRO);
 
 // and each of the language options
 foreach ($languages as $language) {
-    sms_playOrSay($gather, $language['prompt'], language['twilio_code']);
+    sms_playOrSay($gather, $language['prompt'], $language['twilio_code']);
 }
 
 sms_playOrSay($gather, $HOTLINE_STRAIGHT_TO_VOICEMAIL);
