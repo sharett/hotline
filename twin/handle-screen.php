@@ -25,7 +25,7 @@ if ($user_pushed == 1) {
 		// yes, connect them
 		
 		// announce the connection
-		$response->say($HOTLINE_CONNECTING_TO_CALLER, array('voice' => 'alice'));
+		sms_playOrSay($gather, $HOTLINE_CONNECTING_TO_CALLER);
 		
 		// connect them to the caller at the front of the queue and log it
 		$dial = $response->dial();
@@ -37,11 +37,11 @@ if ($user_pushed == 1) {
 		// TODO
 		
 		// no, let them know the caller hung up
-		$response->say($HOTLINE_CALLER_HUNG_UP, array('voice' => 'alice'));
+		sms_playOrSay($response, $HOTLINE_CALLER_HUNG_UP);
 	}
 } else {
 	// no, say goodbye
-    $response->say($HOTLINE_GOODBYE, array('voice' => 'alice'));
+    sms_playOrSay($response, $HOTLINE_GOODBYE);
 }
 $response->hangup();
 

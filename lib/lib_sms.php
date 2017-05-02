@@ -846,13 +846,13 @@ function sms_isNumberBlocked($phone, &$error)
 *   True unless an error occurred
 */
 
-function sms_playOrSay(&$gather, $media, $voice_code = null)
+function sms_playOrSay(&$gather, $string, $voice_code = null)
 {
-    if (filter_var($url, FILTER_VALIDATE_URL) === TRUE) {
-        $gather->play($media);
+    if (filter_var($string, FILTER_VALIDATE_URL) === TRUE) {
+        $gather->play($string);
     } else {
         if (!$voice_code) $voice_code = 'en';
-        $gather->say($media,
+        $gather->say($string,
 		array('voice' => 'alice', 'language' => $voice_code));
     }
 }

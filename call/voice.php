@@ -32,7 +32,7 @@ if (isset($_REQUEST['To']) && strlen($_REQUEST['To']) > 0) {
         $dial->client($number);
     }
 } else {
-    $response->say("Thanks for calling!");
+    sms_playOrSay($response, "Thanks for calling!");
 }
 
 header('Content-Type: text/xml');
