@@ -850,7 +850,8 @@ function sms_isNumberBlocked($phone, &$error)
 
 function sms_playOrSay(&$gather, $string, $voice_code = null)
 {
-    if (filter_var($string, FILTER_VALIDATE_URL) === TRUE) {
+    $sub_string = substr($string, 0, 4);
+    if ($sub_string == 'http') {
         $gather->play($string);
     } else {
         if (!$voice_code) $voice_code = 'en-US';

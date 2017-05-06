@@ -25,7 +25,7 @@ if ($user_pushed == 1) {
 		// yes, connect them
 		
 		// announce the connection
-		sms_playOrSay($gather, $HOTLINE_CONNECTING_TO_CALLER);
+		sms_playOrSay($response, $HOTLINE_CONNECTING_TO_CALLER);
 		
 		// connect them to the caller at the front of the queue and log it
 		$dial = $response->dial();
