@@ -76,6 +76,9 @@ foreach ($pages as $title => $page) {
     <div class="container-fluid">
       <div class="row">
          <div class="col-sm-12 main">
+          <div class="alert alert-warning" role="alert">
+            <b>Don't use your browser's back button.</b> Instead, please use the links above.
+          </div>
  
 <?php
 
