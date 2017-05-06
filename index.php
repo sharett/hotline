@@ -35,7 +35,7 @@ $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, cont
 	"   LOWER(body) != 'off' AND LOWER(body) != 'on' ".
 	"ORDER BY communication_time";
 if (!db_db_query($sql, $comms, $error)) {
-	echo $error;
+?><div class="alert alert-danger" role="alert"><?php echo $error ?></div><?php
 }
 
 // Home page
