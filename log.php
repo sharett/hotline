@@ -14,9 +14,9 @@ require_once $LIB_BASE . 'lib_sms.php';
 include 'header.php';
 
 // URL parameters
-$start = (int)$_REQUEST['s'];
-$mark = (int)$_REQUEST['mark'];
-$unmark = (int)$_REQUEST['unmark'];
+$start = isset($_REQUEST['s']) ? (int)$_REQUEST['s'] : '';
+$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : '';
+$unmark = isset($_REQUEST['unmark']) ? (int)$_REQUEST['unmark'] : '';
 
 // Settings
 $page = 50;
