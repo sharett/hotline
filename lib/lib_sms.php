@@ -83,6 +83,11 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 {
 	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
 	
+	if (!count($numbers)) {
+		// there are no messages to send
+		return true;
+	}
+	
 	if ($progress_every) {
 		echo '<p>Sending ';
 	}
