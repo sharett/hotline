@@ -204,6 +204,18 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 		return false;
 	}
 	
+	// confirm that the text is not identical to the previous broadcast text sent
+	$sql = "SELECT * FROM communications WHERE phone_to LIKE 'BROADCAST%' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	if (!db_db_getrow($sql, $last_broadcast, $error)) {
+		return false;
+	}
+	if ($last_broadcast['body'] == $text) {
+		// it is identical!
+		$error = "This text is identical to the last one sent - aborting!";
+		return false;
+	}
+	
 	// load the broadcast numbers
 	$sql = "SELECT phone FROM broadcast WHERE status='active'";
 	if (!db_db_getcol($sql, $numbers, $error)) {
@@ -263,6 +275,18 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 	$text = trim($text);
 	if (!$text) {
 		$error = "No text was provided.";
+		return false;
+	}
+	
+	// confirm that the text is not identical to the previous broadcast text sent
+	$sql = "SELECT * FROM communications WHERE phone_to LIKE 'BROADCAST%' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	if (!db_db_getrow($sql, $last_broadcast, $error)) {
+		return false;
+	}
+	if ($last_broadcast['body'] == $text) {
+		// it is identical!
+		$error = "This text is identical to the last one sent - aborting!";
 		return false;
 	}
 	
