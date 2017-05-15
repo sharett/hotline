@@ -11,7 +11,7 @@ require_once 'config.php';
 include 'header.php';
 
 if (!db_db_query("SELECT * FROM languages ORDER BY keypress", $languages, $error)) {
-    echo $error;
+?><div class="alert alert-danger" role="alert"><?php echo $error ?></div><?php
 }
 
 ?>

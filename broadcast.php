@@ -15,11 +15,11 @@ header('Content-type: text/html; charset=utf-8');
 include 'header.php';
 
 // URL parameters
-$action = $_REQUEST['action'];
-$text = trim($_REQUEST['text']);
-$request_response = trim($_REQUEST['response']);
-$confirmed = $_REQUEST['confirm'];
-$communications_id = $_REQUEST['id'];
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
+$text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
+$request_response = isset($_REQUEST['response']) ? trim($_REQUEST['response']) : '';
+$confirmed = isset($_REQUEST['confirm']) ? $_REQUEST['confirm'] : '';
+$communications_id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
 // Authorized user?
 $authorized = empty($BROADCAST_AUTHORIZED_USERS) || 
@@ -57,14 +57,14 @@ $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
 db_db_getone($sql, $broadcast_count, $error);
 
 // any error message?
-if ($error) {
+if (!empty($error)) {
 ?>
 	      <div class="alert alert-danger" role="alert"><?php echo $error ?></div>
 <?php
 }
 
 // any success message?
-if ($success) {
+if (!empty($success)) {
 ?>
 	      <div class="alert alert-success" role="alert"><?php echo $success ?></div>
 <?php
