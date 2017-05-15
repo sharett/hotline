@@ -12,13 +12,13 @@ $include_calling = true; // include twilio client js
 include 'header.php';
 
 // URL parameters
-$start = (int)$_REQUEST['s'];
-$ph = trim($_REQUEST['ph']);
-$from = $_REQUEST['from'];
-$text = trim($_REQUEST['text']);
-$mark = (int)$_REQUEST['mark'];
-$unmark = (int)$_REQUEST['unmark'];
-$hide = (int)$_REQUEST['hide'];  // if true, hide the text & call options
+$start = isset($_REQUEST['s']) ? (int)$_REQUEST['s'] : '';
+$ph = isset($_REQUEST['ph']) ? trim($_REQUEST['ph']) : '';
+$from = isset($_REQUEST['from']) ? $_REQUEST['from'] : '';
+$text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
+$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : '';
+$unmark = isset($_REQUEST['unmark']) ? (int)$_REQUEST['unmark'] : '';
+$hide = isset($_REQUEST['hide']) ? (int)$_REQUEST['hide'] : '';  // if true, hide the text & call options
 
 // Normalize the phone number
 if ($ph) {
@@ -74,14 +74,14 @@ if ($ph && $text) {
 sms_whoIsCaller($name, $ph, $error);
 
 // any error message?
-if ($error) {
+if (!empty($error)) {
 ?>
 	      <div class="alert alert-danger" role="alert"><?php echo $error ?></div>
 <?php
 }
 
 // any success message?
-if ($success) {
+if (!empty($success)) {
 ?>
 	      <div class="alert alert-success" role="alert"><?php echo $success ?></div>
 <?php

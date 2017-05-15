@@ -22,7 +22,7 @@
               <tbody>
 <?php
 // is the number to dial from specified?
-$from_url = $from ? ("&from=" . urlencode($from)) : '';
+$from_url = !empty($from) ? ("&from=" . urlencode($from)) : '';
 
 foreach ($comms as $comm) {
 	$not_responded = !$comm['responded'] && $comm['phone_to'] == $HOTLINE_CALLER_ID && 

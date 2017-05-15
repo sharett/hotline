@@ -13,9 +13,9 @@ require_once $LIB_BASE . 'lib_sms.php';
 include 'header.php';
 
 // URL parameters
-$action = $_REQUEST['action'];
-$staff = $_POST['staff'];
-$id = $_REQUEST['id'];
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
+$staff = isset($_POST['staff']) ? $_POST['staff'] : '';
+$id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
 // Authorized user?
 $authorized = empty($HOTLINE_AUTHORIZED_USERS) || 
@@ -39,14 +39,14 @@ if ($action == 'add' && $authorized) {
 }
 
 // any error message?
-if ($error) {
+if (!empty($error)) {
 ?>
 	      <div class="alert alert-danger" role="alert"><?php echo $error ?></div>
 <?php
 }
 
 // any success message?
-if ($success) {
+if (!empty($success)) {
 ?>
 	      <div class="alert alert-success" role="alert"><?php echo $success ?></div>
 <?php
