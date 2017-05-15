@@ -12,13 +12,13 @@ $include_calling = true; // include twilio client js
 include 'header.php';
 
 // URL parameters
-$start = isset($_REQUEST['s']) ? (int)$_REQUEST['s'] : '';
+$start = isset($_REQUEST['s']) ? (int)$_REQUEST['s'] : 0;
 $ph = isset($_REQUEST['ph']) ? trim($_REQUEST['ph']) : '';
 $from = isset($_REQUEST['from']) ? $_REQUEST['from'] : '';
 $text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
-$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : '';
-$unmark = isset($_REQUEST['unmark']) ? (int)$_REQUEST['unmark'] : '';
-$hide = isset($_REQUEST['hide']) ? (int)$_REQUEST['hide'] : '';  // if true, hide the text & call options
+$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : 0;
+$unmark = isset($_REQUEST['unmark']) ? (int)$_REQUEST['unmark'] : 0;
+$hide = isset($_REQUEST['hide']) ? (int)$_REQUEST['hide'] : 0;  // if true, hide the text & call options
 
 // Normalize the phone number
 if ($ph) {

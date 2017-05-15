@@ -14,7 +14,7 @@ require_once $LIB_BASE . 'lib_sms.php';
 include 'header.php';
 
 // URL parameters
-$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : '';
+$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : 0;
 
 // Mark an item as responded to
 if ($mark) {
