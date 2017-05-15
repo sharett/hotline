@@ -22,9 +22,7 @@ sms_loadLanguageById($language_id, $language, $error);
 
 // no one available to answer
 if ($language_id != 0) {
-    $response->say($language['voicemail'], 
-        array('voice' => 'alice', 'language' => $language['twilio_code'])
-    );
+    sms_playOrSay($response, $language['voicemail'], $language['twilio_code']);
 }
 
 // record for up to 5 minutes
@@ -36,9 +34,7 @@ $response->record(
 );
 
 // if we reach here, then the recording did not succeed
-$response->say('An error occurred - your message was not received.',
-	array('voice' => 'alice')
-);
+sms_playOrSay($response, 'An error occurred - your message was not received.');
 
 echo $response;
 

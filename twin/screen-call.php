@@ -28,8 +28,7 @@ $gather = $response->gather(array(
 );
 
 // say the hotline staff prompt
-$gather->say($HOTLINE_STAFF_PROMPT_1 . $language['language'] . $HOTLINE_STAFF_PROMPT_2,
-	array('voice' => 'alice')
+sms_playOrSay($gather, $HOTLINE_STAFF_PROMPT_1 . $language['language'] . $HOTLINE_STAFF_PROMPT_2
 );
 
 // hang up if it times out

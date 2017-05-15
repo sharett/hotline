@@ -83,6 +83,11 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 {
 	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
 	
+	if (!count($numbers)) {
+		// there are no messages to send
+		return true;
+	}
+	
 	if ($progress_every) {
 		echo '<p>Sending ';
 	}
@@ -832,6 +837,32 @@ function sms_isNumberBlocked($phone, &$error)
 	}
 	
 	return ($count > 0);
+}
+
+/**
+* Based on the media string either says the string in a robot voice or plays the url in the string
+*
+* ...
+* 
+* @param string $gather
+*   The twilio object to call say or play from
+* @param string $string
+*   A string of text which could be a URL which either makes a robot voice say the string or twilio play the URL 
+* @param string $voice_code
+*   The String for the twilio voice code which indicates which language the text is 
+*
+*/
+
+function sms_playOrSay(&$gather, $string, $voice_code = null)
+{
+    $sub_string = substr($string, 0, 4);
+    if ($sub_string == 'http') {
+        $gather->play($string);
+    } else {
+        if (!$voice_code) $voice_code = 'en-US';
+        $gather->say($string,
+		array('voice' => 'alice', 'language' => $voice_code));
+    }
 }
 
 ?>

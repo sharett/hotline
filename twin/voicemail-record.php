@@ -30,20 +30,14 @@ sms_loadLanguageById($language_id, $language, $error);
 
 if (!$url) {
 	// no voicemail!
-	$response->say('An error occurred - your voicemail was not received. Goodbye.',
-		array('voice' => 'alice')
-	);
+	sms_playOrSay($response, 'An error occurred - your voicemail was not received. Goodbye.');
 } else {
 	// send an text alerting the volunteers of a voicemail
 	if (!alertVolunteersOfVoicemail($from, $url, $duration, $error)) {
-		$response->say('An error occurred - your voicemail was not received. Goodbye.',
-			array('voice' => 'alice')
-		);
+		sms_playOrSay($response, 'An error occurred - your voicemail was not received. Goodbye.');
 	} else {
 		// voicemail was received successfully
-		$response->say($language['voicemail_received'],
-			array('voice' => 'alice', 'language' => $language['twilio_code'])
-		);
+		sms_playOrSay($response, $language['voicemail_received'], $language['twilio_code']);
 	}
 }	
 
