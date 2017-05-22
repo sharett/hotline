@@ -45,7 +45,14 @@ $BROADCAST_CALLER_ID = '+1NXXNXXXXXX';
 $BROADCAST_WELCOME = "Welcome to the ". $HOTLINE_NAME . " alert list. ".
 	"To remove yourself from the list, text OFF. To put yourself back on, ".
 	"text ON.";
-$BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
+$BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts. ".
+	"To put yourself back on, text ON.";
+	
+// If set, callers will hear this message and then it will hang up.
+$BROADCAST_VOICE_MESSAGE = "";
+
+// If true, location based broadcasting will be enabled
+$BROADCAST_SUPPORT_ZIPCODE = true;
 
 // List users authorized to send broadcast texts here.  Leave blank to allow all users.
 $BROADCAST_AUTHORIZED_USERS = array();

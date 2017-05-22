@@ -11,10 +11,15 @@
 
 db_databaseConnect();
 
-$pages = array("Broadcast" => "broadcast.php", 
-    "Hotline" => "hotline_staff.php",
-    "Call / Text" => "contact.php", 
-    "Log" => "log.php");
+// menu items are visible if broadcast or hotline numbers are defined
+if ($BROADCAST_CALLER_ID) {
+	$pages["Broadcast"] = "broadcast.php";
+}
+if ($HOTLINE_CALLER_ID) {
+	$pages["Hotline"] = "hotline_staff.php";
+}
+$pages["Call / Text"] = "contact.php";
+$pages["Log"] = "log.php";
 
 ?>
 <!DOCTYPE html>

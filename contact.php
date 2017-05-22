@@ -26,13 +26,13 @@ if ($ph) {
 }
 
 // if the phone number is the broadcast number, make that the from number
-if ($ph == $BROADCAST_CALLER_ID) {
+if ($BROADCAST_CALLER_ID && $ph == $BROADCAST_CALLER_ID) {
 	$from = $BROADCAST_CALLER_ID;
 }
 
-// ensure that the "from" number is hotline or broadcast.  Default to hotline.
-if ($from != $BROADCAST_CALLER_ID) {
-	$from = $HOTLINE_CALLER_ID;
+// ensure that the "from" number is hotline or broadcast.  Default to hotline if it exists.
+if (!$BROADCAST_CALLER_ID || $from != $BROADCAST_CALLER_ID) {
+	$from = $HOTLINE_CALLER_ID ? $HOTLINE_CALLER_ID : $BROADCAST_CALLER_ID;
 }
 
 // Settings
@@ -174,10 +174,20 @@ if (count($comms) >= $page) {
 		   <div class="form-group">
 			<label for="text-message">Call/text from</label>
 			<select class="form-control" name="from">
+<?php
+	if ($HOTLINE_CALLER_ID) {
+?>
 			 <option value="<?php echo $HOTLINE_CALLER_ID ?>" 
 				<?php if ($from == $HOTLINE_CALLER_ID) { echo "selected"; } ?>>Hotline - <?php echo $HOTLINE_CALLER_ID ?></option>
+<?php
+	}
+	if ($BROADCAST_CALLER_ID) {
+?>
 			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
 				<?php if ($from == $BROADCAST_CALLER_ID) { echo "selected"; } ?>>Broadcast - <?php echo $BROADCAST_CALLER_ID ?></option>
+<?php
+	}
+?>
 			</select>
  		   </div>		  
 		   <div class="form-group">

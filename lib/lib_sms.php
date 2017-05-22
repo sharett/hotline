@@ -118,9 +118,11 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
             $error_count++;
         }
         
+        $count++;
+        
         // display progress?
         if ($progress_every) {
-			if (++$count % $progress_every == 0) {
+			if ($count % $progress_every == 0) {
 				echo "." . str_repeat(' ', 1024);
 				flush();
 				ob_flush();
@@ -431,8 +433,20 @@ function sms_whoIsCaller(&$name, $number, &$error)
 
 function sms_handleAdminText($from, $to, $body, &$response, &$error)
 {
-	// is this a one-word admin request?
+	global $BROADCAST_CALLER_ID, $BROADCAST_SUPPORT_ZIPCODE;
+	
 	$body = trim(strtoupper($body));
+	
+	// for broadcast caller ids, do we support zip codes?
+	if ($BROADCAST_SUPPORT_ZIPCODE && $to == $BROADCAST_CALLER_ID &&
+	    sms_isZipcode($body)) {
+		// yes, it is a zipcode
+		sms_updateNumber(true /* enable */, $from, $to, $response, $error);
+		sms_updateZipcode($from, $body, $error);
+		return true;
+	}
+	
+	// is this a one-word admin request?
 	switch($body) {
 		case 'STOP':
 		case 'STOPALL':
@@ -469,6 +483,7 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 		case 'OFF':
 			// disable sending to this number, and respond.
 			sms_updateNumber(false /* disable */, $from, $to, $response, $error);
+			sms_updateZipcode($from, '', $error);
 			return true;
 		default:
 			// do nothing, not an administrative request.
@@ -477,6 +492,63 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 	
 	// not an administrative request
 	return false;
+}
+
+/**
+* Is the text a 5 digit zipcode?
+*
+* ...
+* 
+* @param string $text
+*   The text to check
+*   
+* @return bool
+*   True if it's a 5 digit zipcode
+*/
+
+function sms_isZipcode($text)
+{
+	$text = trim($text);
+	if (strlen($text) != 5) {
+		return false;
+	}
+	
+	// all 5 must be numbers
+	for ($i = 0; $i < 5; $i++) {
+		$ch = substr($text, $i, 1);
+		if ($ch < '0' || $ch > '9') {
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+/**
+* Update the zip code for a phone number
+*
+* ...
+* 
+* @param string $from
+*   The phone number to update
+* @param string $zipcode
+*   The zip code to set
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_updateZipcode($from, $zipcode, &$error)
+{
+	$sql = "UPDATE broadcast SET zipcode='".addslashes($zipcode)."' ".
+		"WHERE phone='".addslashes($from)."'";
+	if (!db_db_command($sql, $error)) {
+		return false;
+	}
+	
+	return true;
 }
 
 /**
@@ -601,6 +673,12 @@ function sms_normalizePhoneNumber(&$number, &$error)
 	// remove everything but numbers and the plus sign as the first digit
 	for ($i = 0; $i < strlen($original_number); $i++) {
 		$ch = substr($original_number, $i, 1);
+		
+		// if we encounter a '[' character, abort - it is the zip code
+		if ($ch == '[') {
+			break;
+		}
+		
 		if (($ch == '+' && $i == 0) ||
 			($ch >= '0' && $ch <= '9')) {
 			$number .= $ch;

@@ -168,6 +168,8 @@ function processHotlineText($from, $body, &$message, &$error)
 
 function processBroadcastText($from, $body, &$message, &$error)
 {
+	global $BROADCAST_FORWARD_TO, $BROADCAST_CALLER_ID, $HOTLINE_NAME;
+	
 	// clear variables
 	$message = '';
 	$error = '';
@@ -179,6 +181,26 @@ function processBroadcastText($from, $body, &$message, &$error)
 		if (sms_getBroadcastResponse($broadcast_response, $error) && $broadcast_response) {
 			// add them to the list and update them with messages they missed
 			sms_addToBroadcastResponse($broadcast_response, $from, $error);
+		}
+	} else if ($BROADCAST_FORWARD_TO) {
+		// forward the text
+		// is this number blocked?
+		if (sms_isNumberBlocked($from, $error)) {
+			// number is blocked, don't forward it or reply
+			return true;
+		}
+
+		// was anything sent?
+		if ($from && $body) {
+			// yes
+			$forwarded = "{$HOTLINE_NAME} text from {$from}: {$body}";
+
+			// attempt to forward
+			$numbers = array($BROADCAST_FORWARD_TO);
+			if (!sms_send($numbers, $forwarded, $error, $BROADCAST_CALLER_ID)) {
+				$message = "Unable to forward your text - please use another contact method.";
+				return false;
+			}
 		}
 	} else {
 		// do nothing - it is added to the history for the coordinator to view

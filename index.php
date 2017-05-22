@@ -43,31 +43,38 @@ if (!db_db_query($sql, $comms, $error)) {
           <h2 class="sub-header"><?php echo $WEBSITE_NAME ?></h2>
           <div class="container">
 		   <div class="row">
+<?php
+if ($BROADCAST_CALLER_ID) {
+?>
 			<div class="col-md-4">
 			  <h3>Broadcast texts</h3>
 			  <p>Administer the list and send texts to the <b><?php echo $broadcast_count ?></b> numbers in the database from the
 			  <b><?php echo $BROADCAST_CALLER_ID ?></b> number.</p>
 			  <p><a class="btn btn-success" href="broadcast.php" role="button">Broadcast</a></p>
 			</div>
+<?php
+}
+if ($HOTLINE_CALLER_ID) {
+?>
 			<div class="col-md-4">
 			  <h3>Hotline 
 <?php
-if (count($comms)) {
+	if (count($comms)) {
 ?>
 			  <span class="badge" style="background-color: #f89406;"><?php echo count($comms) ?></span>
 <?php
-}
+	}
 ?>
 			  </h3>
 			  <p>View active hotline staff and make calls and texts from the <b><?php echo $HOTLINE_CALLER_ID ?></b> number.
 <?php
-if (count($comms)) {
-	if (count($comms) == 1) {
-		echo "There is <b>1</b> communication waiting for a response.";
-	} else {
-		echo "There are <b>". count($comms) . "</b> communications waiting for a response.";
-	}	
-}
+	if (count($comms)) {
+		if (count($comms) == 1) {
+			echo "There is <b>1</b> communication waiting for a response.";
+		} else {
+			echo "There are <b>". count($comms) . "</b> communications waiting for a response.";
+		}	
+	}
 ?>
 			  </p>
 			  <p>
@@ -77,6 +84,9 @@ if (count($comms)) {
 				<a class="btn btn-success" href="hotline_languages.php" role="button">Languages</a>
 			  </p>
 		   </div>
+<?php
+}
+?>
 			<div class="col-md-4">
 			  <h3>Log</h3>
 			  <p>View a log of all texts and calls.</p>

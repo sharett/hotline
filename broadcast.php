@@ -7,6 +7,7 @@
 
 require_once 'config.php';
 require_once $LIB_BASE . 'lib_sms.php';
+require_once $LIB_BASE . 'lib_map.php';
 
 // required to avoid output buffering problems when sending progress marks
 // as texts are sent
@@ -18,6 +19,8 @@ include 'header.php';
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
 $request_response = isset($_REQUEST['response']) ? trim($_REQUEST['response']) : '';
+$zipcode = isset($_REQUEST['zipcode']) ? trim($_REQUEST['zipcode']) : '';
+$miles = isset($_REQUEST['miles']) ? (float)$_REQUEST['miles'] : 0;
 $confirmed = isset($_REQUEST['confirm']) ? $_REQUEST['confirm'] : '';
 $communications_id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
@@ -35,7 +38,7 @@ if (!$authorized) {
 if ($action == 'broadcast' && $authorized) {
 	if ($confirmed == 'on') {
 		// confirmed, send the broadcast
-		if (sendBroadcastText($text, $request_response, $error, $success)) {
+		if (sendBroadcastText($text, $request_response, $zipcode, $miles, $error, $success)) {
 			$text = '';
 			$request_response = '';
 		}
@@ -121,6 +124,24 @@ if (!empty($success)) {
 			  to include the instruction to reply yes!
 			</p>
  		   </div>
+<?php
+if ($BROADCAST_SUPPORT_ZIPCODE) {
+?>
+ 		   <div class="form-group form-inline">
+			<label for="zipcode">Zip code:</label>
+			<input type="text" class="form-control" name="zipcode" size="7" maxlength="5"
+			       id="zipcode" placeholder="00000" value="<?php echo $zipcode ?>">
+			<label for="miles">&nbsp;Miles:</label>
+			<input type="text" class="form-control" name="miles" size="5"
+			       id="miles" placeholder="0" value="<?php echo $miles ?>">
+			<p class="help-block">
+			  If set, the text will only be sent to numbers within this distance
+			  of this zipcode.
+			</p>
+ 		   </div>
+<?php
+}
+?>
  		   <div class="checkbox">
 			 <label>
 			   <input type="checkbox" name="confirm"> Confirm sending this broadcast
@@ -173,6 +194,10 @@ include 'footer.php';
 *   The text to send.
 * @param string $request_response
 *   The additional text requesting a response if they want to participate further.
+* @param string $zipcode
+*   If set, the zip code to center on
+* @param float $miles
+*   If set, the number of miles out from the zip code to send to
 * @param string &$error
 *   An error if one occurred.
 * @param string &$message
@@ -182,7 +207,7 @@ include 'footer.php';
 *   True if sent.
 */
 
-function sendBroadcastText($text, $request_response, &$error, &$message)
+function sendBroadcastText($text, $request_response, $zipcode, $miles, &$error, &$message)
 {
 	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
 	
@@ -204,17 +229,38 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 		return false;
 	}
 	
-	// load the broadcast numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active'";
-	if (!db_db_getcol($sql, $numbers, $error)) {
-		return false;
+	// is a zip code set?
+	$within = '';
+	if ($zipcode) {
+		// yes, send it to people within the radius
+		$sql = "SELECT * FROM locations WHERE ".
+			"zipcode='".addslashes($zipcode)."'";
+		if (!db_db_getrow($sql, $location, $error)) {
+			return false;
+		}
+		if (!$location['id']) {
+			$error = "Zip code not found.";
+			return false;
+		}
+		
+		if (!map_getNumbersWithin($location['latitude'], $location['longitude'], 
+								  $miles, $numbers, $error)) {
+			return false;
+		}
+		$within = ' within ' . $miles . ' miles of ' . $location['city'] . ', ' . $location['state'];
+	} else {
+		// no, send it to everyone
+		$sql = "SELECT phone FROM broadcast WHERE status='active'";
+		if (!db_db_getcol($sql, $numbers, $error)) {
+			return false;
+		}
 	}
 	
 	if (count($numbers) == 0) {
-		$error = "No numbers to send to.";
+		$error = "No numbers to send to{$within}.";
 		return false;
 	}
-	
+
 	// send the texts
 	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
 				  $BROADCAST_PROGRESS_MARK_EVERY)) {
@@ -231,6 +277,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	sms_storeCallData($data, $error);
 
 	$message = "Text sent to " . count($numbers) . " numbers" .
+		($location ? (' ' . $within) : '') .
 		($error ? ' (except errors listed above).' : '.');
 	return true;
 }

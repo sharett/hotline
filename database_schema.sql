@@ -28,6 +28,7 @@ CREATE TABLE `blocked_numbers` (
 CREATE TABLE `broadcast` (
   `id` int(11) UNSIGNED NOT NULL,
   `phone` varchar(25) NOT NULL,
+  `zipcode` varchar(5) NOT NULL DEFAULT '',
   `status` enum('new','active','disabled') NOT NULL DEFAULT 'new'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='List of numbers for the broadcast texts.';
 
@@ -130,6 +131,21 @@ INSERT INTO `languages` (`id`, `language`, `keypress`, `prompt`, `voicemail`, `v
 (1, 'English', 2, 'Press 2 for English.', 'No one is available to answer.  Please leave a message.', 'Your voicemail has been received.  Goodbye.', 'en-US'),
 (2, 'Spanish', 1, 'Para espa&#241;ol oprima uno.', 'Nadie esta disponible. Favor de dejar un mensaje.', 'Tu correo de voz se ha recibido. Adi&oacute;s.', 'es-MX');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `locations`
+--
+
+CREATE TABLE `locations` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `zipcode` varchar(5) NOT NULL,
+  `city` varchar(50) NOT NULL,
+  `state` varchar(2) NOT NULL,
+  `latitude` float NOT NULL,
+  `longitude` float NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 --
 -- Indexes for dumped tables
 --
@@ -187,6 +203,12 @@ ALTER TABLE `languages`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `locations`
+--
+ALTER TABLE `locations`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -230,6 +252,11 @@ ALTER TABLE `errors`
 --
 ALTER TABLE `languages`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+--
+-- AUTO_INCREMENT for table `locations`
+--
+ALTER TABLE `locations`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- Constraints for dumped tables
 --

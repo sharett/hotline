@@ -64,6 +64,14 @@ if ($action != 'list') {
 		   <div class="form-group">
 			<label for="import-numbers">Import numbers, one per line, or comma separated</label>
 			<textarea class="form-control" name="numbers" id="import-numbers" rows="3" cols="30"><?php echo $numbers ?></textarea>
+<?php
+	// zip code support?
+	if ($BROADCAST_SUPPORT_ZIPCODE) {
+?>
+			<p class="help-block">To import zip codes, put them in square brackets after the phone number.  Example: +14135551212 [01060]</p>
+<?php
+	}
+?>
  		   </div>		 
  		   <div class="checkbox">
 			 <label>
@@ -87,9 +95,37 @@ if ($action != 'list') {
 	// display the list of numbers
 ?>
           <h3 class="sub-header">Active</h3>
-          <p><?php echo implode(', ', $numbers_active) ?></p>
+<?php
+	// zip code support?
+	if ($BROADCAST_SUPPORT_ZIPCODE) {
+?>
+			<p class="help-block">Zip codes are in square brackets after the phone number.</p>
+<?php
+	}
+?>
+          <p>
+<?php 
+	foreach ($numbers_active as $number) {
+		echo $number['phone'];
+		if ($number['zipcode']) {
+			echo ' [' . $number['zipcode'] . ']';
+		}
+		echo ', ';
+	}
+?>
+          </p>
           <h3 class="sub-header">Disabled</h3>
-          <p><?php echo implode(', ', $numbers_disabled) ?></p>          
+          <p>
+<?php 
+	foreach ($numbers_disabled as $number) {
+		echo $number['phone'];
+		if ($number['zipcode']) {
+			echo ' [' . $number['zipcode'] . ']';
+		}
+		echo ', ';
+	}
+?>
+		  </p>
 <?php
 }
 
@@ -138,6 +174,14 @@ function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 	$success_numbers = array();
 	foreach ($numbers as $number) {
 		$number = trim($number);
+		if (empty($number)) {
+			continue;
+		}
+		
+		// is there a zip code in brackets?
+		if (!parseZipCode($number, $zipcode, $z_error)) {
+			$error .= $z_error . "<br />\n";
+		}
 		
 		// make sure the number is in E164 format
 		if (!sms_normalizePhoneNumber($number, $n_error)) {
@@ -157,7 +201,8 @@ function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 		}
 		
 		// add the number to the database
-		$sql = "INSERT INTO broadcast SET phone='".addslashes($number)."', status='active'";
+		$sql = "INSERT INTO broadcast SET phone='".addslashes($number)."', ".
+			"zipcode='".addslashes($zipcode)."', status='active'";
 		if (!db_db_command($sql, $db_error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
@@ -181,6 +226,42 @@ function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 		$message .= "{$error_count} numbers were invalid or already in the database.";
 	}
 	
+	return true;
+}
+
+/**
+* Parse the number for a zip code contained in square brackets
+*
+* ...
+* 
+* @param string $number
+*   The number to parse
+* @param string &$zipcode
+*   The parsed zipcode, or an empty string if none was found
+* @param string &$error
+*   Errors if any occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function parseZipCode($number, &$zipcode, &$error)
+{
+	$zipcode = '';
+	
+	// find the first '['
+	$open = strpos($number, '[');
+	if ($open === false) {
+		return true;
+	}
+	
+	// find the ']'
+	$close = strpos($number, ']', $open);
+	if ($close === false) {
+		return true;
+	}
+	
+	$zipcode = trim(substr($number, $open + 1, ($close - $open) - 1));
 	return true;
 }
 
@@ -222,6 +303,9 @@ function removeNumbers($numbers, &$error, &$message)
 	$success_count = 0;
 	foreach ($numbers as $number) {
 		$number = trim($number);
+		if (empty($number)) {
+			continue;
+		}
 		
 		// make sure the number is in E164 format
 		if (!sms_normalizePhoneNumber($number, $n_error)) {
@@ -287,14 +371,14 @@ function removeNumbers($numbers, &$error, &$message)
 function loadNumbers(&$numbers_active, &$numbers_disabled, &$error)
 {
 	// load active numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active' ORDER BY phone";
-	if (!db_db_getcol($sql, $numbers_active, $error)) {
+	$sql = "SELECT phone,zipcode FROM broadcast WHERE status='active' ORDER BY phone";
+	if (!db_db_query($sql, $numbers_active, $error)) {
 		return false;
 	}
 
 	// load disabled numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='disabled' ORDER BY phone";
-	if (!db_db_getcol($sql, $numbers_disabled, $error)) {
+	$sql = "SELECT phone,zipcode FROM broadcast WHERE status='disabled' ORDER BY phone";
+	if (!db_db_query($sql, $numbers_disabled, $error)) {
 		return false;
 	}
 	
