@@ -29,8 +29,6 @@ use Twilio\Twiml;
 *   An array of boolean values, with keys 'calls', 'texts' and 'answered_alerts'.  If
 *   these are set to true, then only contacts that support receiving these will be
 *   returned.
-* @param bool $calls
-*   If true, the contact must support calls.
 * @param string &$error
 *   An error if one occurred.
 *   
