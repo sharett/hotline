@@ -5,6 +5,8 @@
 *
 * Display and edit hotline staff on duty now, and all staff
 * 
+* TO-DO: add database schema changes, check for call forwarding, implement call answer alerts
+* 
 */
 
 require_once 'config.php';
@@ -16,6 +18,7 @@ include 'header.php';
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $staff = isset($_POST['staff']) ? $_POST['staff'] : '';
 $id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
+$call_time = isset($_REQUEST['call_time']) ? $_REQUEST['call_time'] : '';
 
 // Authorized user?
 $authorized = empty($HOTLINE_AUTHORIZED_USERS) || 
@@ -36,6 +39,88 @@ if ($action == 'add' && $authorized) {
 // remove call time?
 } else if ($action == 'removecalltime' && $authorized) {
 	removeCallTime($id, $error, $success);
+// add a call time?
+} else if ($action == 'addcalltime' && $authorized) {
+	addCallTime($call_time, $error, $message);
+}
+
+// display add call time modal?
+if ($action == 'calltimemodal') {
+	// look up the name of the contact
+	$sql = "SELECT contact_name FROM contacts WHERE id='".addslashes($id)."'";
+	db_db_getone($sql, $contact_name, $error);
+?>
+		<div class="modal show" tabindex="-1" role="dialog">
+		  <div class="modal-dialog" role="document">
+			<div class="modal-content">
+			  <form id="add-calltime" action="hotline_staff.php" method="POST">
+			   <input type="hidden" name="action" value="addcalltime">
+			   <input type="hidden" name="call_time[id]" value="<?php echo $id ?>">
+			    <div class="modal-header">
+				  <a class="btn close" href="hotline_staff.php" role="button" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+				  <h4 class="modal-title"><strong>Add a call time for <?php echo $contact_name ?></strong></h4>
+			    </div>
+			    <div class="modal-body">
+				  <div class="form-group">
+					<label for="calltime_day">Days</label>
+					<select class="form-control" id="calltime_day" name="call_time[day]">
+					  <option>all</option>
+					  <option>weekdays</option>
+					  <option>weekends</option>
+					  <option>Sun</option>
+					  <option>Mon</option>
+					  <option>Tue</option>
+					  <option>Wed</option>
+					  <option>Thu</option>
+					  <option>Fri</option>
+					  <option>Sat</option>
+					</select>
+				  </div>
+				  <div class="form-group">
+					<label for="calltime_earliest">Earliest time</label>
+					<input type="text" class="form-control" id="calltime_earliest" name="call_time[earliest]" value="12:00 am">
+				  </div>
+				  <div class="form-group">
+					<label for="calltime_latest">Latest time</label>
+					<input type="text" class="form-control" id="calltime_latest" name="call_time[latest]" value="11:59 pm">
+				  </div>
+				  <div class="form-group">
+					<label for="calltime_language_id">Language</label>
+					<select class="form-control" id="calltime_language_id" name="call_time[language_id]">
+<?php
+	// look up the language options
+	$sql = "SELECT id,language FROM languages ORDER BY language";
+	db_db_query($sql, $languages, $error);
+	foreach ($languages as $language) {
+?>
+					  <option value="<?php echo $language['id'] ?>"><?php echo $language['language'] ?></option>
+<?php
+	}
+?>
+					</select>
+				  </div>
+				  <div class="form-group">
+					<label for="calltime_texts">Receive: </label>
+					<label class="checkbox-inline">
+					  <input type="checkbox" id="calltime_texts" name="call_time[texts]"> texts
+					</label>
+					<label class="checkbox-inline">
+					  <input type="checkbox" id="calltime_calls" name="call_time[calls]"> calls
+					</label>
+					<label class="checkbox-inline">
+					  <input type="checkbox" id="calltime_answered_alerts" name="call_time[answered_alerts]"> call answered alerts
+					</label>
+				  </div>
+			    </div>
+			    <div class="modal-footer">
+				  <a class="btn btn-default" href="hotline_staff.php" role="button">Close</a>
+				  <button type="submit" class="btn btn-primary">Add</button>
+			    </div>
+			  </form>
+			</div><!-- /.modal-content -->
+		  </div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+<?php
 }
 
 // any error message?
@@ -115,18 +200,34 @@ if (count($calls)) {
                 <tr>
                   <th>name</th>
                   <th>phone</th>
+                  <th>receives</th>
                 </tr>
               </thead>
               <tbody>
 <?php
-sms_getActiveContacts($contacts, 0 /* any language */, false /*texting doesn't matter*/, $error);
+$receives = array('calls' => false, 'texts' => false, 'answered_alerts' => false);
+sms_getActiveContacts($contacts, 0 /* any language */, $receives, $error);
 foreach ($contacts as $contact) {
+	$display = array();
+	// receive texts?
+	if ($contact['receive_texts'] == 'y') {
+		$display[] = "texts";
+	}
+	// receive calls?
+	if ($contact['receive_calls'] == 'y') {
+		$display[] = "calls";
+	}
+	// receive call answered alerts?
+	if ($contact['receive_call_answered_alerts'] == 'y') {
+		$display[] = "answer alerts";
+	}			
 ?>
                 <tr>
                   <td><?php echo $contact['contact_name']?></td>
                   <td><?php
                   echo '<a href="contact.php?ph=' . urlencode($contact['phone']) . '">' . $contact['phone'] . '</a>';
                   ?></td>
+                  <td><?php echo implode(', ', $display) ?></td>
                 </tr>
 <?php
 }
@@ -182,14 +283,24 @@ foreach ($contacts as $contact) {
 			if ($call_time['enabled'] == 'n') {
 				echo "<s>";
 			}
-			echo "day: {$call_time['day']}; time: ".
-				date("h:i a", strtotime($call_time['earliest'])) . " to ".
-				date("h:i a", strtotime($call_time['latest'])) .", {$call_time['language']}, ";
+			// days and times
+			$display = array("day: {$call_time['day']}",
+				"time: ". date("h:i a", strtotime($call_time['earliest'])) . " to ".
+					date("h:i a", strtotime($call_time['latest'])) .", {$call_time['language']}"
+			);
+			// receive texts?
 			if ($call_time['receive_texts'] == 'y') {
-				echo "texts";
-			} else {
-				echo "no texts";
+				$display[] = "texts";
 			}
+			// receive calls?
+			if ($call_time['receive_calls'] == 'y') {
+				$display[] = "calls";
+			}
+			// receive call answered alerts?
+			if ($call_time['receive_call_answered_alerts'] == 'y') {
+				$display[] = "answer alerts";
+			}			
+			echo implode(', ', $display);
 			if ($call_time['enabled'] == 'n') {
 				echo "</s>";
 			}
@@ -202,7 +313,9 @@ foreach ($contacts as $contact) {
 		}
 	}
 ?>
-
+		<a href="hotline_staff.php?action=calltimemodal&id=<?php echo $contact['id'] ?>">
+		 <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
+		
                   </td>
                 </tr>
 <?php
@@ -217,7 +330,8 @@ foreach ($contacts as $contact) {
 			<label for="text-message">Add staff</label>
 			<textarea class="form-control" name="staff" rows="3" cols="30"></textarea>
 			<p class="help-block">
-			  <b>Format:</b> name,phone number,day,earliest time,latest time,language keypress,texts (0 or 1).
+			  <b>Format:</b> name, phone number, day, earliest time, latest time, language 
+				keypress, texts (0 or 1), calls (0 or 1), call answered alerts (0 or 1).
 			  Only name and phone number required.
 			</p>
  		   </div>		 
@@ -271,6 +385,8 @@ function addStaff($staff, &$error, &$message)
 		// 4 = latest time
 		// 5 = language keypress
 		// 6 = texts (0 or 1).
+		// 7 = calls (0 or 1).
+		// 8 = call answered alerts (0 or 1).
 		
 		// make sure the number is in E164 format
 		if (!sms_normalizePhoneNumber($staff_array[1], $n_error)) {
@@ -333,6 +449,14 @@ function addStaff($staff, &$error, &$message)
 				// default to sending texts
 				$staff_array[6] = 1;
 			}
+			if ($staff_array[7] == '') {
+				// default to receiving calls
+				$staff_array[7] = 1;
+			}
+			if ($staff_array[8] == '') {
+				// default to not sending call answered alerts
+				$staff_array[8] = 0;
+			}
 			
 		    // get language_id from the language_keypress
 		    $language_id = "1";
@@ -349,7 +473,9 @@ function addStaff($staff, &$error, &$message)
 				"earliest='".addslashes(date("H:i:s", strtotime($staff_array[3])))."',".
 				"latest='".addslashes(date("H:i:s", strtotime($staff_array[4])))."',".
 				"language_id='".addslashes($language_id)."',".
-				"receive_texts='". ($staff_array[6] ? 'y' : 'n') . "'";
+				"receive_texts='". ($staff_array[6] ? 'y' : 'n') . "',".
+				"receive_calls='". ($staff_array[7] ? 'y' : 'n') . "',".
+				"receive_call_answered_alerts='". ($staff_array[8] ? 'y' : 'n') . "'";
 			if (!db_db_command($sql, $db_error)) {
 				$error .= "{$staff_line}: {$db_error}<br />\n";
 				continue;
@@ -367,6 +493,81 @@ function addStaff($staff, &$error, &$message)
 		$message .= "{$error_count} staff entries had errors.";
 	}
 	
+	return true;
+}
+
+/**
+* Add a single call time entry to the database
+*
+* Data is passed from a modal form.
+* 
+* @param array $call_time
+*   Call time form data.  Contains the following keys:
+*		'id' => The contact id to add a call time to
+* 		'day' => 'all','weekdays','weekends','Sun','Mon','Tue','Wed','Thu','Fri','Sat'
+* 		'earliest_time' => The earliest time the contact should be called.
+*		'latest_time' => The latest time the contact should be called.
+*		'language_id' => The supported language.
+*		'texts' => Whether the contact should receive texts.
+*		'calls' => Whether the contact should receive calls.
+*		'answered_alerts' => Whether the contact should receive call answered alerts.
+* @param string &$error
+*   Errors if any occurred.
+* @param string &$message
+*   An informational message if appropriate.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function addCallTime($call_time, &$error, &$message)
+{
+	$error = '';
+	$message = '';
+	
+	// call_time[]:
+	
+	
+	// contact id
+	$call_time['id'] = (int)$call_time['id'];
+	if (!$call_time['id']) {
+		$error = "No contact was specified.";
+		return false;
+	}
+	// default day
+	if (!$call_time['day']) {
+		$call_time['day'] = 'all';
+	}
+	// default earliest time
+	if (!$call_time['earliest_time']) {
+		$call_time['earliest_time'] = '12:00 am';
+	}
+	// default latest time
+	if (!$call_time['latest_time']) {
+		$call_time['latest_time'] = '11:59 pm';
+	}
+	// language id
+	$call_time['language_id'] = (int)$call_time['language_id'];
+	if (!$call_time['language_id']) {
+		$error = "No language was specified.";
+		return false;
+	}
+	
+	// add a call_times record
+	$sql = "INSERT INTO call_times SET ".
+		"contact_id='".addslashes($call_time['id'])."',".
+		"day='".addslashes($call_time['day'])."',".
+		"earliest='".addslashes(date("H:i:s", strtotime($call_time['earliest_time'])))."',".
+		"latest='".addslashes(date("H:i:s", strtotime($call_time['latest_time'])))."',".
+		"language_id='".addslashes($call_time['language_id'])."',".
+		"receive_texts='". (($call_time['texts'] == 'on') ? 'y' : 'n') . "',".
+		"receive_calls='". (($call_time['calls'] == 'on') ? 'y' : 'n') . "',".
+		"receive_call_answered_alerts='". (($call_time['answered_alerts'] == 'on') ? 'y' : 'n') ."'";
+	if (!db_db_command($sql, $error)) {
+		return false;
+	}
+
+	$message = "The call time entry was added.";
 	return true;
 }
 

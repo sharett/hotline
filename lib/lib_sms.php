@@ -25,8 +25,12 @@ use Twilio\Twiml;
 *   Array of contacts to be loaded.
 * @param int $language_id
 *   The language the contact must speak.  If zero, all languages will be returned.
-* @param bool $texting
-*   If true, the contact must support texting.
+* @param array $receives
+*   An array of boolean values, with keys 'calls', 'texts' and 'answered_alerts'.  If
+*   these are set to true, then only contacts that support receiving these will be
+*   returned.
+* @param bool $calls
+*   If true, the contact must support calls.
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -34,17 +38,21 @@ use Twilio\Twiml;
 *   True if retrieved successfully.
 */
 
-function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
+function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 {
     $day = date('D');
     $weekend = ($day == 'Sun' || $day == 'Sat');
-
+	
     // Follow me numbers
-    $sql = "SELECT DISTINCT contacts.* FROM call_times ".
+    $sql = "SELECT DISTINCT contacts.*, call_times.receive_texts, call_times.receive_calls, ".
+		"call_times.receive_call_answered_alerts ".
+		"FROM call_times ".
         "LEFT JOIN contacts ON contacts.id = call_times.contact_id ".
         "WHERE enabled='y' AND ".
         ($language_id ? "language_id = '".addslashes($language_id)."' AND " : "") .
-        ($texting ? "receive_texts = 'y' AND " : "") .
+        ($receives['texts'] ? "receive_texts = 'y' AND " : "") .
+        ($receives['calls'] ? "receive_calls = 'y' AND " : "") .
+        ($receives['answered_alerts'] ? "receive_call_answered_alerts = 'y' AND " : "") .
         "((day='all' OR day='{$day}' OR ".
         ($weekend ? "day='weekends'" : "day='weekdays'") .
         ") AND ".
