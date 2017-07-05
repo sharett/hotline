@@ -5,8 +5,6 @@
 *
 * Display and edit hotline staff on duty now, and all staff
 * 
-* TO-DO: add database schema changes, check for call forwarding, implement call answer alerts
-* 
 */
 
 require_once 'config.php';
