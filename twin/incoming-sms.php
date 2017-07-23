@@ -55,7 +55,7 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 	
 	// is this a hotline text?
 	if ($to == $HOTLINE_CALLER_ID) {
-		processHotlineText($from, $body, $message, $error);
+		processHotlineText($from, $body, $media, $message, $error);
 	}
 }
 
@@ -81,6 +81,8 @@ db_databaseDisconnect();
 *   The sending phone number
 * @param string $body
 *   The body of the text
+* @param array $media
+*   The media received with this text
 * @param string &$message
 *   The message to respond with, if any
 * @param string &$error
@@ -90,7 +92,7 @@ db_databaseDisconnect();
 *   True unless a fatal error occurred
 */
 
-function processHotlineText($from, $body, &$message, &$error)
+function processHotlineText($from, $body, $media, &$message, &$error)
 {
 	// clear variables
 	$message = '';
@@ -119,6 +121,11 @@ function processHotlineText($from, $body, &$message, &$error)
 	if (sms_isNumberBlocked($from, $error)) {
 		// number is blocked, don't forward it or reply
 		return true;
+	}
+
+	// was media received? Let them know, but don't forward the media
+	if (count($media)) {
+		$body = trim($body . " [Media received]");
 	}
 
 	// was anything sent?
