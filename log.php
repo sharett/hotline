@@ -63,6 +63,8 @@ if (count($comms) >= $page) {
 ?>
 </p>
 <?php
+// form for exporting of data
+include 'communications_export.php';
 
 include 'footer.php';
 

@@ -165,7 +165,9 @@ if (count($comms) >= $page) {
 ?>
 </p>
 <?php
-
+	// form for exporting of data
+	$export['phone'] = $ph;
+	include 'communications_export.php';
 } else {
 	// no phone number provided - prompt for one
 ?>
