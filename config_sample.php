@@ -47,6 +47,17 @@ $BROADCAST_WELCOME = "Welcome to the ". $HOTLINE_NAME . " alert list. ".
 	"text ON.";
 $BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
 
+// If set, callers will hear this message in each language and then it will hang up.  The format is an array, 
+// with each key the language code, and the value the text to read in that language.  "es-MX" is Spanish, 
+// "en-US" is English.
+// Example: 'en-US' => "Goodbye"
+$BROADCAST_VOICE_MESSAGES = array(
+
+);
+
+// If set, callers will hear this message and then it will hang up.
+$BROADCAST_VOICE_MESSAGE = '';
+
 // List users authorized to send broadcast texts here.  Leave blank to allow all users.
 $BROADCAST_AUTHORIZED_USERS = array();
 
