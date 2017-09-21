@@ -13,9 +13,9 @@ require_once $LIB_BASE . 'lib_sms.php';
 include 'header.php';
 
 // URL parameters
-$action = $_REQUEST['action'];
-$phone = $_POST['phone'];
-$id = $_REQUEST['id'];
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
+$phone = isset($_POST['phone']) ? $_POST['phone'] : '';
+$id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
 // *** ACTIONS ***
 
@@ -32,14 +32,14 @@ $sql = "SELECT * FROM blocked_numbers ORDER by phone";
 db_db_query($sql, $blocks, $error);
 
 // any error message?
-if ($error) {
+if (!empty($error)) {
 ?>
 	      <div class="alert alert-danger" role="alert"><?php echo $error ?></div>
 <?php
 }
 
 // any success message?
-if ($success) {
+if (!empty($success)) {
 ?>
 	      <div class="alert alert-success" role="alert"><?php echo $success ?></div>
 <?php

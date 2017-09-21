@@ -14,9 +14,9 @@ require_once $LIB_BASE . 'lib_sms.php';
 include 'header.php';
 
 // URL parameters
-$start = (int)$_REQUEST['s'];
-$mark = (int)$_REQUEST['mark'];
-$unmark = (int)$_REQUEST['unmark'];
+$start = isset($_REQUEST['s']) ? (int)$_REQUEST['s'] : 0;
+$mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : 0;
+$unmark = isset($_REQUEST['unmark']) ? (int)$_REQUEST['unmark'] : 0;
 
 // Settings
 $page = 50;
@@ -35,7 +35,7 @@ $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, cont
 	"LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
 	"ORDER BY communication_time DESC LIMIT ".addslashes($start).",{$page}";
 if (!db_db_query($sql, $comms, $error)) {
-    echo $error;
+?><div class="alert alert-danger" role="alert"><?php echo $error ?></div><?php
 }
 
 ?>
@@ -63,6 +63,8 @@ if (count($comms) >= $page) {
 ?>
 </p>
 <?php
+// form for exporting of data
+include 'communications_export.php';
 
 include 'footer.php';
 
