@@ -6,9 +6,10 @@
 * Welcome message, prompts for language, sends to incoming-voice-dial.php
 * when a digit is pressed or after a 15 second timeout.
 * 
-* Calls to the broadcast number will play a recorded message and hangup,
-* if a message is set.  Otherwise, calls will be routed to the hotline.
-* s
+* Calls to the broadcast number will play recorded messages in each
+* language and hangup, if messages are set.  Otherwise, calls will be 
+* routed to the hotline.
+* 
 */
 
 require_once '../config.php';

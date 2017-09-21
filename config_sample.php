@@ -55,9 +55,6 @@ $BROADCAST_VOICE_MESSAGES = array(
 
 );
 
-// If set, callers will hear this message and then it will hang up.
-$BROADCAST_VOICE_MESSAGE = '';
-
 // List users authorized to send broadcast texts here.  Leave blank to allow all users.
 $BROADCAST_AUTHORIZED_USERS = array();
 
