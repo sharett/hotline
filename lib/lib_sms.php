@@ -124,9 +124,10 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
             $error_count++;
         }
         
+        $count++;
         // display progress?
         if ($progress_every) {
-			if (++$count % $progress_every == 0) {
+			if ($count % $progress_every == 0) {
 				echo "." . str_repeat(' ', 1024);
 				flush();
 				ob_flush();
