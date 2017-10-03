@@ -76,8 +76,6 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 *   An error if one occurred.
 * @param string $from = ''
 *   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
-* @param string $from = ''
-*   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
 * @param int $progress_every = 0
 *   If nonzero, displays a progress mark after this many messages are sent.
 *   
