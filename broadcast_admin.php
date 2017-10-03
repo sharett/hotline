@@ -17,19 +17,28 @@ include 'header.php';
 // URL parameters
 $action = $_REQUEST['action'];
 $numbers = $_POST['numbers'];
+$tags = $_POST['tags'];
 $send_welcome = ($_POST['send_welcome'] == 'on');
+$id = $_REQUEST['id'];
+$tag = $_REQUEST['tag'];
 
 // *** ACTIONS ***
 
 // import?
 if ($action == 'import') {
-	importNumbers($numbers, $error, $success, $send_welcome);
+	importNumbers($numbers, $tags, $error, $success, $send_welcome);
 // remove?
 } else if ($action == 'remove') {
 	removeNumbers($numbers, $error, $success);
+// remove a tag?
+} else if ($action == 'removetag') {
+	removeTag($id, $tag, $error);
+	$action = 'list';
+}
+
 // list?
-} else if ($action == 'list') {
-	loadNumbers($numbers_active, $numbers_disabled, $error);
+if ($action == 'list' || $action == 'listtags') {
+	loadNumbers($numbers_active, $numbers_disabled, $numbers_by_tag, $error);
 }
 
 // any error message?
@@ -50,13 +59,13 @@ if ($success) {
 		  <h2 class="sub-header">Broadcast</h2>
 		  <ul class="nav nav-pills">
 			<li role="presentation"><a href="broadcast.php">Send</a></li>
-			<li role="presentation"<?php if ($action != 'list') echo ' class="active"'?>><a href="broadcast_admin.php">Import &amp; Remove</a></li>
-			<li role="presentation"<?php if ($action == 'list') echo ' class="active"'?>><a href="broadcast_admin.php?action=list">List</a></li>
+			<li role="presentation"<?php if ($action != 'list' && $action != 'listtags') echo ' class="active"'?>><a href="broadcast_admin.php">Import &amp; Remove</a></li>
+			<li role="presentation"<?php if ($action == 'list' || $action == 'listtags') echo ' class="active"'?>><a href="broadcast_admin.php?action=list">List</a></li>
 			<li role="presentation"><a href="contact.php?ph=<?php echo $BROADCAST_CALLER_ID ?>&hide=1">Log</a></li>
 		  </ul>
 <?php
 // display the import/remove information unless a list is requested
-if ($action != 'list') {
+if ($action != 'list' && $action != 'listtags') {
 ?>          
           <h3 class="sub-header">Import</h3>
           <form id="text-controls" action="broadcast_admin.php" method="POST">
@@ -64,6 +73,12 @@ if ($action != 'list') {
 		   <div class="form-group">
 			<label for="import-numbers">Import numbers, one per line, or comma separated</label>
 			<textarea class="form-control" name="numbers" id="import-numbers" rows="3" cols="30"><?php echo $numbers ?></textarea>
+ 		   </div>
+ 		   <div class="form-group">
+			<label for="add-tags">Add tags to these numbers</label>
+			<input type="text" class="form-control" name="tags" id="add-tags" size="50" 
+			       placeholder="actions, alerts" value="<?php echo addslashes($tags) ?>">
+			<p class="help-block">Optional. Separate each tag with a comma.</p>
  		   </div>		 
  		   <div class="checkbox">
 			 <label>
@@ -84,13 +99,70 @@ if ($action != 'list') {
 		  </form>
 <?php
 } else {
-	// display the list of numbers
+	// display the lists of numbers
 ?>
-          <h3 class="sub-header">Active</h3>
-          <p><?php echo implode(', ', $numbers_active) ?></p>
-          <h3 class="sub-header">Disabled</h3>
-          <p><?php echo implode(', ', $numbers_disabled) ?></p>          
+          <h3 class="sub-header">Active 
 <?php
+	if ($action == 'list') {
+?>
+            <a href="broadcast_admin.php?action=listtags" class="btn btn-success btn-xs" 
+               role="button">Show tags</a></h3>
+<?php
+	} else {
+?>
+            <a href="broadcast_admin.php?action=list" class="btn btn-success btn-xs" 
+               role="button">Hide tags</a></h3>
+<?php
+	}
+?>
+          <p>
+<?php
+	$previous_phone = '';
+	foreach ($numbers_active as $number) {
+		if ($previous_phone != $number['phone']) {
+			if ($previous_phone != '') {
+				echo ", ";
+			}
+?>
+		    <?php echo $number['phone'] ?>
+<?php
+		}
+		$previous_phone = $number['phone'];
+		
+		if ($action == 'listtags') {
+?>
+		    <span class="label label-primary"><?php echo $number['tag'] ?></span>
+<?php			
+		}
+	}
+?>
+		  </p>
+          <h3 class="sub-header">Disabled</h3>
+          <p><?php echo implode(', ', $numbers_disabled) ?></p>
+          <h3 class="sub-header" name="tags">Tags</h3>
+<?php
+	foreach ($numbers_by_tag as $tag => $numbers) {
+?>
+          <h4>
+		    <span class="label label-primary"><?php echo $tag ?></span>
+		    <a href="broadcast_admin.php?action=removetag&tag=<?php echo urlencode($tag) ?>#tags"
+		       onClick="return confirm('Are you sure you want to remove this entire tag?');">
+		      <span class="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span></a>
+          </h4>
+          <p>
+<?php
+		foreach ($numbers as $number) {
+?>
+		    <?php echo $number['phone'] ?>
+		    <a href="broadcast_admin.php?action=removetag&id=<?php echo $number['id'] ?>#tags"
+		       onClick="return confirm('Are you sure you want to remove this tag from this number?');">
+		      <span class="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span></a> &nbsp;
+<?php		 
+		}
+?>
+		  </p>
+<?php
+	}
 }
 
 // display the footer
@@ -102,8 +174,10 @@ include 'footer.php';
 * Each number is separated by a newline, or by commas.  Converts the numbers to E.164 format, and if
 * valid, adds to the database, and send a welcome message.
 * 
-* @param array $numbers
+* @param string $numbers
 *   List of phone numbers, one on each line, or comma separated.
+* @param string $tags
+*   List of tags to add to the imported numbers, comma separated.
 * @param string &$error
 *   Errors if any occurred.
 * @param string &$message
@@ -115,7 +189,7 @@ include 'footer.php';
 *   True if any numbers were provided.
 */
 
-function importNumbers($numbers, &$error, &$message, $send_welcome = true)
+function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true)
 {
 	global $BROADCAST_CALLER_ID, $BROADCAST_WELCOME, $BROADCAST_PROGRESS_MARK_EVERY; 
 	
@@ -133,6 +207,16 @@ function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 	if (count($numbers) == 0) {
 		$error = "No numbers to import.";
 		return false;
+	}
+	
+	// break apart the tags into an array
+	$tags_array = explode(",", trim(strtolower($tags)));
+	$tags = array();
+	foreach ($tags_array as $tag) {
+		$tag = trim($tag);
+		if ($tag) {
+			$tags[] = $tag;
+		}
 	}
 	
 	$success_numbers = array();
@@ -153,14 +237,20 @@ function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 		}
 		if ($number_exists > 0) {
 			$error .= "{$number}: Already in the database.<br />\n";
+			if (!addTagsToNumber($number, $tags, $add_error)) {
+				$error .= "{$number}: {$add_error}<br />\n";
+			}
 			continue;
 		}
 		
-		// add the number to the database
+		// add the number and tags to the database
 		$sql = "INSERT INTO broadcast SET phone='".addslashes($number)."', status='active'";
 		if (!db_db_command($sql, $db_error)) {
 			$error .= "{$number}: {$db_error}<br />\n";
 			continue;
+		}		
+		if (!addTagsToNumber($number, $tags, $add_error)) {
+			$error .= "{$number}: {$add_error}<br />\n";
 		}
 		
 		// import successful
@@ -179,6 +269,54 @@ function importNumbers($numbers, &$error, &$message, $send_welcome = true)
 	$message = "Imported {$success_count} numbers successfully. ";
 	if ($error_count) {
 		$message .= "{$error_count} numbers were invalid or already in the database.";
+	}
+	
+	return true;
+}
+
+/**
+* Add tags to a broadcast number
+*
+* Create a broadcast_tag record for each one.
+* 
+* @param string $number
+*   Broadcast number to add to.
+* @param array $tags
+*   Array of tags to add to the imported numbers.
+* @param string &$error
+*   Errors if any occurred.
+*   
+* @return bool
+*   True unless an error occured.
+*/
+
+function addTagsToNumber($number, $tags, &$error)
+{
+	// get the broadcast id for this number
+	$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($number)."'";
+	if (!db_db_getone($sql, $id, $error)) {
+		return false;
+	}
+	
+	foreach ($tags as $tag) {
+		// does the tag already exist?
+		$sql = "SELECT COUNT(*) FROM broadcast_tags WHERE ".
+			"broadcast_id='".addslashes($id)."' AND ".
+			"tag='".addslashes($tag)."'";
+		if (!db_db_getone($sql, $count, $error)) {
+			return false;
+		}
+		if ($count > 0) {
+			continue;
+		}
+		
+		// insert the new tag
+		$sql = "INSERT INTO broadcast_tags SET ".
+			"broadcast_id='".addslashes($id)."', ".
+			"tag='".addslashes($tag)."'";
+		if (!db_db_command($sql, $error)) {
+			return false;
+		}
 	}
 	
 	return true;
@@ -254,6 +392,13 @@ function removeNumbers($numbers, &$error, &$message)
 			continue;
 		}
 		
+		// remove tags associated with this number
+		$sql = "DELETE FROM broadcast_tags WHERE broadcast_id='".addslashes($broadcast_id)."'";
+		if (!db_db_command($sql, $db_error)) {
+			$error .= "{$number}: {$db_error}<br />\n";
+			continue;
+		}
+		
 		// remove successful
 		$success_count++;
 	}
@@ -269,6 +414,42 @@ function removeNumbers($numbers, &$error, &$message)
 }
 
 /**
+* Remove a tag, entirely or for a specific number
+*
+* ...
+* 
+* @param int $id
+*   Broadcast tag id to remove.
+* @param string $tag
+*   Tag to remove all broadcast tag records for.
+* @param string &$error
+*   Errors if any occurred.
+*   
+* @return bool
+*   True unless an error occured.
+*/
+
+function removeTag($id, $tag, &$error)
+{
+	// was a specific broadcast tag specified?
+	if ($id) {
+		$sql = "DELETE FROM broadcast_tags WHERE id='".addslashes($id)."'";
+		if (!db_db_command($sql, $error)) {
+			return false;
+		}
+	}
+	// was an entire tag specified?
+	if ($tag) {
+		$sql = "DELETE FROM broadcast_tags WHERE tag='".addslashes($tag)."'";
+		if (!db_db_command($sql, $error)) {
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+/**
 * Load lists of active and disabled numbers
 *
 * ...
@@ -277,6 +458,8 @@ function removeNumbers($numbers, &$error, &$message)
 *   Set to the list of active phone numbers.
 * @param array &$numbers_disabled
 *   Set to the list of disabled phone numbers.
+* @param array &$numbers_by_tag
+*   Set to the list of tags, with a subarray of numbers.
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -284,11 +467,13 @@ function removeNumbers($numbers, &$error, &$message)
 *   True if valid.
 */
 
-function loadNumbers(&$numbers_active, &$numbers_disabled, &$error)
+function loadNumbers(&$numbers_active, &$numbers_disabled, &$numbers_by_tag, &$error)
 {
 	// load active numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active' ORDER BY phone";
-	if (!db_db_getcol($sql, $numbers_active, $error)) {
+	$sql = "SELECT broadcast.phone, broadcast_tags.tag, broadcast_tags.id FROM broadcast ".
+		"LEFT JOIN broadcast_tags ON broadcast.id = broadcast_tags.broadcast_id ".
+		"WHERE status='active' ORDER BY phone";
+	if (!db_db_query($sql, $numbers_active, $error)) {
 		return false;
 	}
 
@@ -296,6 +481,22 @@ function loadNumbers(&$numbers_active, &$numbers_disabled, &$error)
 	$sql = "SELECT phone FROM broadcast WHERE status='disabled' ORDER BY phone";
 	if (!db_db_getcol($sql, $numbers_disabled, $error)) {
 		return false;
+	}
+	
+	// load by tags
+	$sql = "SELECT DISTINCT tag FROM broadcast_tags ORDER BY tag";
+	if (!db_db_getcol($sql, $tags, $error)) {
+		return false;
+	}
+	$numbers_by_tag = array();
+	foreach ($tags as $tag) {
+		$sql = "SELECT broadcast_tags.id, broadcast.phone FROM broadcast_tags ".
+			"LEFT JOIN broadcast ON broadcast.id = broadcast_tags.broadcast_id ".
+			"WHERE broadcast_tags.tag = '".addslashes($tag)."' AND ".
+			"broadcast.status='active' ORDER BY broadcast.phone";
+		if (!db_db_query($sql, $numbers_by_tag[$tag], $error)) {
+			return false;
+		} 
 	}
 	
 	return true;
