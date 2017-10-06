@@ -56,6 +56,9 @@ if ($action == 'broadcast_response' && $authorized) {
 $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
 db_db_getone($sql, $broadcast_count, $error);
 
+// load the tags
+loadBroadcastTags($broadcast_tags, $error);
+
 // any error message?
 if (!empty($error)) {
 ?>
@@ -104,12 +107,33 @@ if (!empty($success)) {
           <form id="text-controls" action="broadcast.php" method="POST">
 		   <input type="hidden" name="action" value="broadcast">
 		   <div class="form-group">
-			<label for="text_entry">Send a new broadcast text message to <?php echo $broadcast_count ?> numbers:</label>
+			<label for="text_entry">Send a new broadcast text message:</label>
 			<input type="text" class="form-control" name="text" 
 			       id="text_entry" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
 			       placeholder="Text message" value="<?php echo $text ?>">
 			<p class="help-block" id="text_entry_length"></p>
  		   </div>
+
+		   <div class="form-group">
+			 <label>Limit to tags:</label><br>
+<?php
+	if (count($broadcast_tags) > 0) {
+		foreach ($broadcast_tags as $tag => $count) {
+?>
+ 		     <label class="checkbox-inline">
+			   <input type="checkbox" name="tags" value="<?php echo $tag ?>"> 
+			     <span class="label label-primary"><?php echo $tag ?></span> 
+			     <span class="badge"><?php echo $count ?></span>
+			 </label>
+<?php
+		}
+	} else {
+		echo "(no tags)";
+	}
+?> 		   
+		     <p class="help-block">If no tags are checked, everyone (<?php echo $broadcast_count ?> numbers) will receive the broadcast.</p>
+		   </div>
+
  		   <div class="form-group">
 			<label for="request_response">Response requested?</label>
 			<input type="text" class="form-control" name="response" 
@@ -325,5 +349,41 @@ function getBroadcastResponseConfirmed($communications_id, &$numbers, &$error)
 	
 	return true;
 }
+
+/**
+* Load tags and the count of numbers for each
+*
+* ...
+* 
+* @param array &$broadcast_tags
+*   Set to an array - keys are the tags, values are the count for each tag
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function loadBroadcastTags(&$broadcast_tags, &$error)
+{
+	$sql = "SELECT DISTINCT tag FROM broadcast_tags ORDER BY tag";
+	if (!db_db_getcol($sql, $tags, $error)) {
+		return false;
+	}
+	
+	foreach ($tags as $tag) {
+		$sql = "SELECT COUNT(*) FROM broadcast_tags ".
+			"LEFT JOIN broadcast ON broadcast.id = broadcast_tags.broadcast_id ".
+			"WHERE broadcast_tags.tag='".addslashes($tag)."' AND broadcast.status='active'";
+		if (!db_db_getone($sql, $tag_count, $error)) {
+			return false;
+		}
+		
+		$broadcast_tags[$tag] = $tag_count;
+	}
+	
+	return true;
+}
+
 
 ?>

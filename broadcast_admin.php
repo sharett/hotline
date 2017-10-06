@@ -37,7 +37,7 @@ if ($action == 'import') {
 }
 
 // list?
-if ($action == 'list' || $action == 'listtags') {
+if (substr($action, 0, 4) == 'list') {
 	loadNumbers($numbers_active, $numbers_disabled, $numbers_by_tag, $error);
 }
 
@@ -59,13 +59,13 @@ if ($success) {
 		  <h2 class="sub-header">Broadcast</h2>
 		  <ul class="nav nav-pills">
 			<li role="presentation"><a href="broadcast.php">Send</a></li>
-			<li role="presentation"<?php if ($action != 'list' && $action != 'listtags') echo ' class="active"'?>><a href="broadcast_admin.php">Import &amp; Remove</a></li>
-			<li role="presentation"<?php if ($action == 'list' || $action == 'listtags') echo ' class="active"'?>><a href="broadcast_admin.php?action=list">List</a></li>
+			<li role="presentation"<?php if (substr($action, 0, 4) != 'list') echo ' class="active"'?>><a href="broadcast_admin.php">Import &amp; Remove</a></li>
+			<li role="presentation"<?php if (substr($action, 0, 4) == 'list') echo ' class="active"'?>><a href="broadcast_admin.php?action=list">List</a></li>
 			<li role="presentation"><a href="contact.php?ph=<?php echo $BROADCAST_CALLER_ID ?>&hide=1">Log</a></li>
 		  </ul>
 <?php
 // display the import/remove information unless a list is requested
-if ($action != 'list' && $action != 'listtags') {
+if (substr($action, 0, 4) != 'list') {
 ?>          
           <h3 class="sub-header">Import</h3>
           <form id="text-controls" action="broadcast_admin.php" method="POST">
@@ -100,51 +100,38 @@ if ($action != 'list' && $action != 'listtags') {
 <?php
 } else {
 	// display the lists of numbers
-?>
-          <h3 class="sub-header">Active 
-<?php
 	if ($action == 'list') {
 ?>
-            <a href="broadcast_admin.php?action=listtags" class="btn btn-success btn-xs" 
+            <h3><a href="broadcast_admin.php?action=listtags" class="btn btn-success btn-sm" 
                role="button">Show tags</a></h3>
 <?php
 	} else {
+		// tags are already shown
 ?>
-            <a href="broadcast_admin.php?action=list" class="btn btn-success btn-xs" 
+            <h3><a href="broadcast_admin.php?action=list" class="btn btn-success btn-sm" 
                role="button">Hide tags</a></h3>
 <?php
 	}
 ?>
+          <h3 class="sub-header">Active</h3> 
           <p>
 <?php
-	$previous_phone = '';
-	foreach ($numbers_active as $number) {
-		if ($previous_phone != $number['phone']) {
-			if ($previous_phone != '') {
-				echo ", ";
-			}
-?>
-		    <?php echo $number['phone'] ?>
-<?php
-		}
-		$previous_phone = $number['phone'];
-		
-		if ($action == 'listtags') {
-?>
-		    <span class="label label-primary"><?php echo $number['tag'] ?></span>
-<?php			
-		}
-	}
+		displayNumbers($numbers_active, ($action == 'listtags'), $error);
 ?>
 		  </p>
           <h3 class="sub-header">Disabled</h3>
-          <p><?php echo implode(', ', $numbers_disabled) ?></p>
-          <h3 class="sub-header" name="tags">Tags</h3>
+          <p>
+<?php
+		displayNumbers($numbers_disabled, ($action == 'listtags'), $error);
+?>
+		  </p>
+          <h3 class="sub-header">Tags</h3><a name="tags"></a>
+          <p class="help-block">Numbers with a line drawn through them are disabled.</p>
 <?php
 	foreach ($numbers_by_tag as $tag => $numbers) {
 ?>
           <h4>
-		    <span class="label label-primary"><?php echo $tag ?></span>
+		    <span class="label label-primary"><?php echo $tag ?></span><a name="<?php echo urlencode($tag) ?>"></a>
 		    <a href="broadcast_admin.php?action=removetag&tag=<?php echo urlencode($tag) ?>#tags"
 		       onClick="return confirm('Are you sure you want to remove this entire tag?');">
 		      <span class="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span></a>
@@ -152,9 +139,17 @@ if ($action != 'list' && $action != 'listtags') {
           <p>
 <?php
 		foreach ($numbers as $number) {
+			if ($number['status'] == 'disabled') {
+?>
+			<s><?php echo $number['phone'] ?></s>
+<?php
+			} else {
 ?>
 		    <?php echo $number['phone'] ?>
-		    <a href="broadcast_admin.php?action=removetag&id=<?php echo $number['id'] ?>#tags"
+<?php
+			}
+?>
+		    <a href="broadcast_admin.php?action=removetag&id=<?php echo $number['id'] ?>#<?php echo urlencode($tag) ?>"
 		       onClick="return confirm('Are you sure you want to remove this tag from this number?');">
 		      <span class="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span></a> &nbsp;
 <?php		 
@@ -478,8 +473,10 @@ function loadNumbers(&$numbers_active, &$numbers_disabled, &$numbers_by_tag, &$e
 	}
 
 	// load disabled numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='disabled' ORDER BY phone";
-	if (!db_db_getcol($sql, $numbers_disabled, $error)) {
+	$sql = "SELECT broadcast.phone, broadcast_tags.tag, broadcast_tags.id FROM broadcast ".
+		"LEFT JOIN broadcast_tags ON broadcast.id = broadcast_tags.broadcast_id ".
+		"WHERE status='disabled' ORDER BY phone";
+	if (!db_db_query($sql, $numbers_disabled, $error)) {
 		return false;
 	}
 	
@@ -490,13 +487,56 @@ function loadNumbers(&$numbers_active, &$numbers_disabled, &$numbers_by_tag, &$e
 	}
 	$numbers_by_tag = array();
 	foreach ($tags as $tag) {
-		$sql = "SELECT broadcast_tags.id, broadcast.phone FROM broadcast_tags ".
+		$sql = "SELECT broadcast_tags.id, broadcast.phone, broadcast.status FROM broadcast_tags ".
 			"LEFT JOIN broadcast ON broadcast.id = broadcast_tags.broadcast_id ".
-			"WHERE broadcast_tags.tag = '".addslashes($tag)."' AND ".
-			"broadcast.status='active' ORDER BY broadcast.phone";
+			"WHERE broadcast_tags.tag = '".addslashes($tag)."' ".
+			"ORDER BY broadcast.phone";
 		if (!db_db_query($sql, $numbers_by_tag[$tag], $error)) {
 			return false;
 		} 
+	}
+	
+	return true;
+}
+
+/**
+* Display a list of numbers, optionally displaying tags
+*
+* ...
+* 
+* @param array $numbers
+*   Each number contains an array:
+* 		'phone' => The phone number
+* 		'tag' => The tag, if any
+* @param bool $show_tags
+*   If true, tags are displayed after each number.
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function displayNumbers($numbers, $show_tags, &$error)
+{
+	// show each phone number once only, and then list all tags associated if requested
+	$previous_phone = '';
+	foreach ($numbers as $number) {
+		if ($previous_phone != $number['phone']) {
+			if ($previous_phone != '') {
+				echo ", ";
+			}
+?>
+		    <?php echo $number['phone'] ?>
+<?php
+		}
+		$previous_phone = $number['phone'];
+		
+		if ($show_tags) {
+?>
+		    <a href="#<?php echo urlencode($number['tag']) ?>"><span class="label label-primary"><?php echo $number['tag'] ?></span></a>
+<?php			
+		}
 	}
 	
 	return true;
