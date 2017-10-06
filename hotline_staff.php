@@ -503,8 +503,8 @@ function addStaff($staff, &$error, &$message)
 *   Call time form data.  Contains the following keys:
 *		'id' => The contact id to add a call time to
 * 		'day' => 'all','weekdays','weekends','Sun','Mon','Tue','Wed','Thu','Fri','Sat'
-* 		'earliest_time' => The earliest time the contact should be called.
-*		'latest_time' => The latest time the contact should be called.
+* 		'earliest' => The earliest time the contact should be called.
+*		'latest' => The latest time the contact should be called.
 *		'language_id' => The supported language.
 *		'texts' => Whether the contact should receive texts.
 *		'calls' => Whether the contact should receive calls.
@@ -537,12 +537,12 @@ function addCallTime($call_time, &$error, &$message)
 		$call_time['day'] = 'all';
 	}
 	// default earliest time
-	if (!$call_time['earliest_time']) {
-		$call_time['earliest_time'] = '12:00 am';
+	if (!$call_time['earliest']) {
+		$call_time['earliest'] = '12:00 am';
 	}
 	// default latest time
-	if (!$call_time['latest_time']) {
-		$call_time['latest_time'] = '11:59 pm';
+	if (!$call_time['latest']) {
+		$call_time['latest'] = '11:59 pm';
 	}
 	// language id
 	$call_time['language_id'] = (int)$call_time['language_id'];
@@ -555,8 +555,8 @@ function addCallTime($call_time, &$error, &$message)
 	$sql = "INSERT INTO call_times SET ".
 		"contact_id='".addslashes($call_time['id'])."',".
 		"day='".addslashes($call_time['day'])."',".
-		"earliest='".addslashes(date("H:i:s", strtotime($call_time['earliest_time'])))."',".
-		"latest='".addslashes(date("H:i:s", strtotime($call_time['latest_time'])))."',".
+		"earliest='".addslashes(date("H:i:s", strtotime($call_time['earliest'])))."',".
+		"latest='".addslashes(date("H:i:s", strtotime($call_time['latest'])))."',".
 		"language_id='".addslashes($call_time['language_id'])."',".
 		"receive_texts='". (($call_time['texts'] == 'on') ? 'y' : 'n') . "',".
 		"receive_calls='". (($call_time['calls'] == 'on') ? 'y' : 'n') . "',".
