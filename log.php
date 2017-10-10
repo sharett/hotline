@@ -42,10 +42,11 @@ if (!db_db_query($sql, $comms, $error)) {
           <h2 class="sub-header">Log</h2>
           <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or 
           unmark an item as responded to.</p>
-<?php
+<!-- ?php
 include 'communications.php';
 
-?>
+? -->
+<div id="auto_refresh_div"></div>
 <p>
 <?php
 // show the previous button if we are not at the beginning
@@ -69,3 +70,24 @@ include 'communications_export.php';
 include 'footer.php';
 
 ?>
+<!-- Autorefresh logs -->
+<script>
+  function auto_refresh(){
+    $.ajax({
+      url: "communications.php",
+      cache: false,
+      success: function(data){
+         $("#auto_refresh_div").html(data);
+      }
+    });
+  }
+
+  $(document).ready(function(){
+
+    auto_refresh(); //Call auto_load() function when DOM is Ready
+
+  });
+
+  //Refresh auto_refresh() function after 10000 milliseconds
+  setInterval(auto_refresh,10000);
+</script>
