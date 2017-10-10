@@ -100,10 +100,10 @@ if ($action == 'calltimemodal') {
 				  <div class="form-group">
 					<label for="calltime_texts">Receive: </label>
 					<label class="checkbox-inline">
-					  <input type="checkbox" id="calltime_texts" name="call_time[texts]"> texts
+					  <input type="checkbox" id="calltime_texts" name="call_time[texts]" checked> texts
 					</label>
 					<label class="checkbox-inline">
-					  <input type="checkbox" id="calltime_calls" name="call_time[calls]"> calls
+					  <input type="checkbox" id="calltime_calls" name="call_time[calls]" checked> calls
 					</label>
 					<label class="checkbox-inline">
 					  <input type="checkbox" id="calltime_answered_alerts" name="call_time[answered_alerts]"> call answered alerts
@@ -256,8 +256,9 @@ if (!db_db_query("SELECT * FROM contacts ORDER BY contact_name", $contacts, $err
 <?php
 foreach ($contacts as $contact) {
     $sql = "SELECT call_times.*,languages.language FROM call_times ".
-	"LEFT JOIN languages ON languages.id = call_times.language_id ".
-        "WHERE contact_id='{$contact['id']}'";
+		"LEFT JOIN languages ON languages.id = call_times.language_id ".
+        "WHERE contact_id='{$contact['id']}' ".
+        "ORDER BY call_times.day, call_times.earliest, call_times.latest, languages.language";
     if (!db_db_query($sql, $call_times, $error)) {
         echo $error;
     }
