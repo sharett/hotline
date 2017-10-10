@@ -334,7 +334,7 @@ function sms_getQueueInfo($name, &$queue, &$error)
 *   An error if one occurred.
 *   
 * @return bool
-*   True if sent.
+*   True if stored.
 */
 
 function sms_storeCallData($data, &$error)
@@ -631,10 +631,10 @@ function sms_normalizePhoneNumber(&$number, &$error)
 /**
 * Load the last broadcast text that requested a response
 *
-* ...
+* If the last broadcast response has been closed, return nothing.
 * 
 * @param string &$broadcast_response
-*   Set to the latest broadcast text that requested a response
+*   Set to the latest open broadcast text that requested a response
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -646,7 +646,29 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 {
 	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE' ".
 		"ORDER BY communication_time DESC LIMIT 1";
-	return db_db_getrow($sql, $broadcast_response, $error);
+	if (!db_db_getrow($sql, $broadcast_response, $error)) {
+		return false;
+	}
+	
+	if (empty($broadcast_response)) {
+		return true;
+	}
+	
+	// load the last 'BROADCAST_RESPONSE_CLOSED' entry
+	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE_CLOSED' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	if (!db_db_getrow($sql, $broadcast_response_closed, $error)) {
+		return false;
+	}
+	
+	// is the closed entry after the initial entry?
+	if ($broadcast_response_closed['communication_time'] >
+		$broadcast_response['communication_time']) {
+		// yes, it has been closed - clear the response
+		$broadcast_response = array();
+	}
+	
+	return true;
 }
 
 /**
@@ -736,6 +758,35 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 	}
 	
 	return true;
+}
+
+/**
+* Load the last broadcast text that requested a response
+*
+* If the last broadcast response has been closed, return nothing.
+* 
+* @param string &$broadcast_response
+*   Set to the latest open broadcast text that requested a response
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_closeBroadcastResponse(&$error)
+{
+	global $BROADCAST_CALLER_ID;
+	
+	// store a BROADCAST_RESPONSE_CLOSED text
+	$data = array(
+		'From' => $BROADCAST_CALLER_ID,
+		'To' => 'BROADCAST_RESPONSE_CLOSED',
+		'Body' => '',
+		'MessageSid' => 'text'
+	);
+
+	return sms_storeCallData($data, $error);
 }
 
 /**

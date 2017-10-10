@@ -52,6 +52,19 @@ if ($action == 'broadcast_response' && $authorized) {
 	}
 }
 
+// close the broadcast update?
+if ($action == 'broadcast_close' && $authorized) {
+	if ($confirmed == 'on') {
+		// confirmed, close the broadcast
+		if (sms_closeBroadcastResponse($error)) {
+			$success = "The broadcast update was closed.";
+		}
+	} else {
+		// checkbox wasn't checked
+		$error = "Please check the confirmation checkbox.";
+	}
+}
+
 // get the count of the active numbers
 $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
 db_db_getone($sql, $broadcast_count, $error);
@@ -158,6 +171,17 @@ if ($broadcast_response) {
 		  <br />
 		  <h4>Responders:</h4>
 		  <p><?php echo implode(', ', $broadcast_response_confirmed) ?></p>
+
+		  <h3>Close broadcast</h3>
+		  <form id="broadcast-close" action="broadcast.php" method="POST">
+		   <input type="hidden" name="action" value="broadcast_close">
+		   <div class="checkbox">
+			 <label>
+			   <input type="checkbox" name="confirm"> Confirm closing this broadcast
+			 </label>
+		   </div>
+		   <button class="btn btn-danger" id="button-text">Close broadcast</button>
+		  </form>
 <?php
 }
 
