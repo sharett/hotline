@@ -17,9 +17,12 @@ include 'header.php';
 // URL parameters
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
+$tags = isset($_REQUEST['tags']) ? $_REQUEST['tags'] : array();
 $request_response = isset($_REQUEST['response']) ? trim($_REQUEST['response']) : '';
 $confirmed = isset($_REQUEST['confirm']) ? $_REQUEST['confirm'] : '';
 $communications_id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
+
+print_r($tags);
 
 // Authorized user?
 $authorized = empty($BROADCAST_AUTHORIZED_USERS) || 
@@ -108,7 +111,7 @@ if (!empty($success)) {
 		   <input type="hidden" name="action" value="broadcast">
 		   <div class="form-group">
 			<label for="text_entry">Send a new broadcast text message:</label>
-			<input type="text" class="form-control" name="text" 
+			<input type="text" class="form-control" name="text" maxLength="1600" 
 			       id="text_entry" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
 			       placeholder="Text message" value="<?php echo $text ?>">
 			<p class="help-block" id="text_entry_length"></p>
@@ -118,12 +121,13 @@ if (!empty($success)) {
 			 <label>Limit to tags:</label><br>
 <?php
 	if (count($broadcast_tags) > 0) {
-		foreach ($broadcast_tags as $tag => $count) {
+		foreach ($broadcast_tags as $tag => $tag_data) {
 ?>
  		     <label class="checkbox-inline">
-			   <input type="checkbox" name="tags" value="<?php echo $tag ?>"> 
+			   <input type="checkbox" name="tags[<?php echo $tag_data['id'] ?>]" 
+			          id="checkbox_tag_<?php echo $tag_data['id'] ?>"<?php if ($tags[$tag_data['id']] == 'on') { echo " checked"; } ?>>
 			     <span class="label label-primary"><?php echo $tag ?></span> 
-			     <span class="badge"><?php echo $count ?></span>
+			     <span class="badge"><?php echo $tag_data['count'] ?></span>
 			 </label>
 <?php
 		}
@@ -136,7 +140,7 @@ if (!empty($success)) {
 
  		   <div class="form-group">
 			<label for="request_response">Response requested?</label>
-			<input type="text" class="form-control" name="response" 
+			<input type="text" class="form-control" name="response" maxLength="1600" 
 			       id="request_response" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
 			       placeholder="Reply yes if you can participate" 
 			       value="<?php echo $request_response ?>">
@@ -371,6 +375,7 @@ function loadBroadcastTags(&$broadcast_tags, &$error)
 		return false;
 	}
 	
+	$tag_id = 0;
 	foreach ($tags as $tag) {
 		$sql = "SELECT COUNT(*) FROM broadcast_tags ".
 			"LEFT JOIN broadcast ON broadcast.id = broadcast_tags.broadcast_id ".
@@ -379,7 +384,10 @@ function loadBroadcastTags(&$broadcast_tags, &$error)
 			return false;
 		}
 		
-		$broadcast_tags[$tag] = $tag_count;
+		$broadcast_tags[$tag] = array(
+			'id' => $tag_id++,
+			'count' => $tag_count
+		);
 	}
 	
 	return true;
