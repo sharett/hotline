@@ -90,8 +90,9 @@ function getNumbersToCall($from, $language_id, &$enqueue_anyway, &$numbers, &$er
 	$call_anyway = false;
 	$numbers = array();
 	
-	// who should we call given the current day, time and language?
-	if (!sms_getActiveContacts($contacts, $language_id, false /* not texting */, $error)) {
+	// whom should we call given the current day, time and language?
+	$receives = array('calls' => true, 'texts' => false, 'answered_alerts' => false);
+	if (!sms_getActiveContacts($contacts, $language_id, $receives, $error)) {
 		return false;
 	}
 

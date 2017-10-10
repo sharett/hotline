@@ -69,12 +69,9 @@ function alertVolunteersOfVoicemail($from, $url, $duration, &$error)
 {
 	global $HOTLINE_NAME;
 	
-	// compost the text
-    $body = "{$HOTLINE_NAME} hotline has received a {$duration} second message from {$from}. ".
-		"Log in to the website to listen to this voicemail.";
-		
-	// look up who is on duty
-	if (!sms_getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error)) {
+	// look up who is on duty who receives texts
+	$receives = array('calls' => false, 'texts' => true, 'answered_alerts' => false);
+	if (!sms_getActiveContacts($contacts, 0 /* no language restriction */, $receives, $error)) {
 		return false;
 	}
 	
@@ -94,6 +91,10 @@ function alertVolunteersOfVoicemail($from, $url, $duration, &$error)
 		$from .= " ({$contact_name})";
 	}
 
+	// compose the text
+    $body = "{$HOTLINE_NAME} hotline has received a {$duration} second message from {$from}. ".
+		"Log in to the website to listen to this voicemail.";
+		
 	// send the texts
 	if (!sms_send($numbers, $body, $error)) {
 		return false;

@@ -56,6 +56,8 @@ CREATE TABLE `call_times` (
   `earliest` time NOT NULL,
   `latest` time NOT NULL,
   `receive_texts` enum('y','n') NOT NULL DEFAULT 'y',
+  `receive_calls` enum('y','n') NOT NULL DEFAULT 'y',
+  `receive_call_answered_alerts` enum('y','n') NOT NULL DEFAULT 'n',
   `language_id` int(11) UNSIGNED NOT NULL DEFAULT '0',
   `enabled` enum('y','n') NOT NULL DEFAULT 'y'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Defines days and times that a volunteer will be called.';

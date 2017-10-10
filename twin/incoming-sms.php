@@ -99,8 +99,9 @@ function processHotlineText($from, $body, $media, &$message, &$error)
 	$error = '';
 	$from_descriptive = $from;
 	
-    // look up who is on duty
-	sms_getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error);
+    // look up who is on duty and receive texts
+    $receives = array('calls' => false, 'texts' => true, 'answered_alerts' => false);
+	sms_getActiveContacts($contacts, 0 /* no language restriction */, $receives, $error);
 
 	// format the numbers
 	$numbers = array();
