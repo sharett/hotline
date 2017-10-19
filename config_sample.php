@@ -12,9 +12,6 @@
 // The name of the website
 $WEBSITE_NAME = 'Hotline admin';
 
-// The hotline name
-$HOTLINE_NAME = 'Just Another Hotline';
-
 // Filesystem path to the document root
 $HTML_BASE = '/home/hotline/html/';
 
@@ -63,15 +60,18 @@ $BROADCAST_PROGRESS_MARK_EVERY = 3;
 
 // **** HOTLINE ****
 
-// Main hotline number
-$HOTLINE_CALLER_ID = '+1NXXNXXXXXX';
+// Each hotline is an element of this array.  The array key is the hotline number, and the values are prompts.
+$HOTLINES = array(
+	'+1NXXNXXXXXX' => 
+		array('name' => 'Just another hotline',
+		      'intro' => 'Just another hotline',
+		      'voicemail' => 'or press 0 for voicemail',
+		      'staff_prompt_1' => 'Just another hotline call in ', // language will be added here
+		      'staff_prompt_2' => '. Press 1 to accept.'),
+);
 
 // Hotline prompts
-$HOTLINE_INTRO = $HOTLINE_NAME . ' hotline. ';
 $HOTLINE_GOODBYE = 'Goodbye.';
-$HOTLINE_STAFF_PROMPT_1 = $HOTLINE_NAME . ' hotline call in '; // language will be added here
-$HOTLINE_STAFF_PROMPT_2 = '. Press 1 to accept.';
-$HOTLINE_STRAIGHT_TO_VOICEMAIL= 'or press 0 for voicemail';
 $HOTLINE_CONNECTING_TO_CALLER = 'Connecting you to the caller.';
 $HOTLINE_CALLER_HUNG_UP = 'The caller hung up or someone else took the call.  Goodbye.';
 

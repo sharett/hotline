@@ -75,7 +75,7 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 * @param string &$error
 *   An error if one occurred.
 * @param string $from = ''
-*   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
+*   The number to send from.  Defaults to the first $HOTLINES key.
 * @param int $progress_every = 0
 *   If nonzero, displays a progress mark after this many messages are sent.
 *   
@@ -85,7 +85,7 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 
 function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 {
-	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINES;
 	
 	if (!count($numbers)) {
 		// there are no messages to send
@@ -98,7 +98,9 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 	
 	// default from address
 	if (!$from) {
-		$from = $HOTLINE_CALLER_ID;
+		if (!sms_getFirstHotline($from, $hotline, $error)) {
+			return false;
+		}
 	}
 	
 	// create a Twilio client
@@ -155,7 +157,7 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 * @param string $url
 *   The URL for Twilio to request when connected
 * @param string $from
-*   The number to place the call from.  Defaults to the $HOTLINE_CALLER_ID constant.
+*   The number to place the call from.  Defaults to the first $HOTLINES number.
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -165,11 +167,13 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 
 function sms_placeCalls($numbers, $url, $from, &$error)
 {
-	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINES;
 	
-	// default from number
+	// default from address
 	if (!$from) {
-		$from = $HOTLINE_CALLER_ID;
+		if (!sms_getFirstHotline($from, $hotline, $error)) {
+			return false;
+		}
 	}
 	
 	// create a Twilio client
@@ -506,12 +510,12 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 
 function sms_updateNumber($enable, $from, $to, &$response, &$error)
 {
-	global $BROADCAST_CALLER_ID, $HOTLINE_CALLER_ID, $BROADCAST_WELCOME, $BROADCAST_GOODBYE;
+	global $BROADCAST_CALLER_ID, $HOTLINES, $BROADCAST_WELCOME, $BROADCAST_GOODBYE;
 	
 	$enabled = $enable ? 'y' : 'n';
 	
 	// disable/enable call times for volunteers
-	if ($to == $HOTLINE_CALLER_ID) {
+	if (array_key_exists($to, $HOTLINES)) {
 		$sql = "UPDATE call_times ".
 			"LEFT JOIN contacts ON call_times.contact_id = contacts.id ".
 			"SET enabled='".addslashes($enabled)."' ".
@@ -919,6 +923,86 @@ function sms_playOrSay(&$gather, $string, $voice_code = null)
         $gather->say($string,
 		array('voice' => 'alice', 'language' => $voice_code));
     }
+}
+
+/**
+* Retrieve the first hotline number and prompts, if it exists.
+*
+* ...
+* 
+* @param string &$number
+*   The first hotline number.
+* @param array &$hotline
+*   An array of prompts for this hotline.
+* @param string &$error
+*   An error if one occurred.
+*
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_getFirstHotline(&$number, &$hotline, &$error)
+{
+	global $HOTLINES;
+	
+	$number = '';
+	$hotline = array();
+	
+	if (!isset($HOTLINES) || !count($HOTLINES)) {
+		$error = "No hotlines are defined.";
+		return false;
+	}
+	
+	$hotline = reset($HOTLINES);
+	$number = key($HOTLINES);
+	
+	return ($hotline && $number);
+}
+
+/**
+* Parse a language prompt to pull out a specific hotline's prompt
+*
+* Multiple prompts are encoded in JSON notation as a single array.  Each key
+* is a hotline number, each value is the prompt.
+* 
+* @param string $hotline_number
+*   The hotline number.
+* @param string &$prompt
+*   Passed as the original prompt; set to the parsed prompt
+* @param string &$error
+*   An error if one occurred.
+*
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_parseLanguagePrompt($hotline_number, &$prompt, &$error)
+{
+	// is this json?
+	$prompt = trim($prompt);
+	if (substr($prompt, 0, 1) != '{' || substr($prompt, -1) != '}') {
+		// no, make no changes
+		return true;
+	}
+	
+	$prompts = json_decode($prompt, true);
+	if ($prompts === false) {
+		$error = "JSON decode error.";
+		return false;
+	}
+	
+	if (!is_array($prompts)) {
+		$error = "Prompts are not an array of options.";
+		return false;
+	}
+	
+	if (!array_key_exists($hotline_number, $prompts)) {
+		$error = "Hotline number is not listed in prompts.";
+		return false;
+	}
+	
+	$prompt = $prompts[$hotline_number];
+	return true;
 }
 
 ?>

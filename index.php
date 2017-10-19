@@ -26,12 +26,16 @@ $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
 db_db_getone($sql, $broadcast_count, $error);
 
 // load all communications that need to be responded to
+$hotline_phones_to = array();
+foreach ($HOTLINES as $hotline_number => $hotline) {
+	$hotline_phones_to[] = "phone_to = '".addslashes($hotline_number) . "'";
+}
 $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, contacts_to.contact_name AS to_contact ".
 	"FROM communications ".
 	"LEFT JOIN contacts AS contacts_from ON contacts_from.phone = communications.phone_from ".
 	"LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
 	"WHERE responded IS NULL AND (status = 'text' OR status = 'voicemail') AND ".
-	"	phone_to = '".addslashes($HOTLINE_CALLER_ID) . "' AND ".
+	(count($hotline_phones_to) ? ("(" . implode(" OR ", $hotline_phones_to) . ") AND ") : '') .
 	"   LOWER(body) != 'off' AND LOWER(body) != 'on' ".
 	"ORDER BY communication_time";
 if (!db_db_query($sql, $comms, $error)) {
@@ -59,7 +63,8 @@ if (count($comms)) {
 }
 ?>
 			  </h3>
-			  <p>View active hotline staff and make calls and texts from the <b><?php echo $HOTLINE_CALLER_ID ?></b> number.
+			  <p>View active hotline staff and make calls and texts from the <b><?php echo implode(', ', array_keys($HOTLINES)) ?></b> 
+			     number<?php echo (count($HOTLINES) == 1) ? '' : 's' ?>.
 <?php
 if (count($comms)) {
 	if (count($comms) == 1) {

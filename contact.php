@@ -30,10 +30,11 @@ if ($ph == $BROADCAST_CALLER_ID) {
 	$from = $BROADCAST_CALLER_ID;
 }
 
-// ensure that the "from" number is hotline or broadcast.  Default to hotline.
-if ($from != $BROADCAST_CALLER_ID) {
-	$from = $HOTLINE_CALLER_ID;
+// ensure that the "from" number is hotline or broadcast.  Default to first hotline.
+if ($from != $BROADCAST_CALLER_ID && !array_key_exists($from, $HOTLINES)) {
+	sms_getFirstHotline($from, $hotline, $error);
 }
+
 
 // Settings
 $page = 50; // show per page
@@ -120,9 +121,9 @@ if ($ph && $ph_valid) {
 ?>
 		  <h3 class="sub-header">Broadcast log (<?php echo $BROADCAST_CALLER_ID ?>)</h3>
 <?php
-	} elseif ($ph == $HOTLINE_CALLER_ID) {
+	} elseif (array_key_exists($ph, $HOTLINES)) {
 ?>
-		  <h3 class="sub-header">Hotline log (<?php echo $HOTLINE_CALLER_ID ?>)</h3>
+		  <h3 class="sub-header">Hotline log (<?php echo $ph ?>)</h3>
 <?php
 	} else {
 ?>
@@ -176,16 +177,26 @@ if (count($comms) >= $page) {
 		   <div class="form-group">
 			<label for="text-message">Call/text from</label>
 			<select class="form-control" name="from">
-			 <option value="<?php echo $HOTLINE_CALLER_ID ?>" 
-				<?php if ($from == $HOTLINE_CALLER_ID) { echo "selected"; } ?>>Hotline - <?php echo $HOTLINE_CALLER_ID ?></option>
+<?php
+	foreach ($HOTLINES as $hotline_number => $hotline) {
+?>
+			 <option value="<?php echo $hotline_number ?>" 
+				<?php if ($from == $hotline_number) { echo "selected"; } ?>><?php echo $hotline['name'] ?> - <?php echo $hotline_number ?></option>
+<?php
+	}
+	if (isset($BROADCAST_CALLER_ID) && $BROADCAST_CALLER_ID) {
+?>
 			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
 				<?php if ($from == $BROADCAST_CALLER_ID) { echo "selected"; } ?>>Broadcast - <?php echo $BROADCAST_CALLER_ID ?></option>
+<?php
+	}
+?>
 			</select>
  		   </div>		  
 		   <div class="form-group">
 			<label for="text-message">Phone number</label>
 			<input type="text" class="form-control" name="ph" 
-			       placeholder="<?php echo $HOTLINE_CALLER_ID ?>"
+			       placeholder="<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : $BROADCAST_CALLER_ID ?>"
 			       value="<?php echo $ph ?>">
  		   </div>		  
 		   <button class="btn btn-success" id="button-text">Lookup</button>

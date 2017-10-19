@@ -117,9 +117,9 @@ CREATE TABLE `languages` (
   `id` int(11) UNSIGNED NOT NULL,
   `language` varchar(25) NOT NULL,
   `keypress` int(1) UNSIGNED NOT NULL,
-  `prompt` varchar(255) NOT NULL,
-  `voicemail` varchar(255) NOT NULL DEFAULT '',
-  `voicemail_received` varchar(255) NOT NULL DEFAULT '',
+  `prompt` text NOT NULL,
+  `voicemail` text NOT NULL,
+  `voicemail_received` text NOT NULL,
   `twilio_code` varchar(15) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Languages the hotline supports';
 
