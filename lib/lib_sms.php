@@ -96,7 +96,7 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 		echo '<p>Sending ';
 	}
 	
-	// default from address
+	// default from number
 	if (!$from) {
 		if (!sms_getFirstHotline($from, $hotline, $error)) {
 			return false;

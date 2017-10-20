@@ -63,8 +63,15 @@ if (count($comms)) {
 }
 ?>
 			  </h3>
-			  <p>View active hotline staff and make calls and texts from the <b><?php echo implode(', ', array_keys($HOTLINES)) ?></b> 
-			     number<?php echo (count($HOTLINES) == 1) ? '' : 's' ?>.
+			  <p>View active hotline staff and make calls and texts from the hotline<?php echo (count($HOTLINES) == 1) ? '' : 's' ?>: <b>
+<?php
+$count = 0;
+foreach ($HOTLINES as $hotline_number => $hotline) {
+	echo $hotline_number . ' ('. $hotline['name'] . ')';
+	echo (++$count == count($HOTLINES)) ? '. ' : ', ';
+}
+?>
+			  </b>
 <?php
 if (count($comms)) {
 	if (count($comms) == 1) {

@@ -18,23 +18,16 @@ $from = isset($_REQUEST['from']) ? $_REQUEST['from'] : '';
 $text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
 $mark = isset($_REQUEST['mark']) ? (int)$_REQUEST['mark'] : 0;
 $unmark = isset($_REQUEST['unmark']) ? (int)$_REQUEST['unmark'] : 0;
-$hide = isset($_REQUEST['hide']) ? (int)$_REQUEST['hide'] : 0;  // if true, hide the text & call options
 
 // Normalize the phone number
 if ($ph) {
 	$ph_valid = sms_normalizePhoneNumber($ph, $error);
 }
 
-// if the phone number is the broadcast number, make that the from number
-if ($ph == $BROADCAST_CALLER_ID) {
-	$from = $BROADCAST_CALLER_ID;
-}
-
 // ensure that the "from" number is hotline or broadcast.  Default to first hotline.
 if ($from != $BROADCAST_CALLER_ID && !array_key_exists($from, $HOTLINES)) {
 	sms_getFirstHotline($from, $hotline, $error);
 }
-
 
 // Settings
 $page = 50; // show per page
@@ -90,14 +83,27 @@ if (!empty($success)) {
 
 // display the contact's information
 if ($ph && $ph_valid) {
-	if (!$hide) {
-		// display the call & text options
+	// display the call & text options
 ?>
 		  <h2 class="sub-header">Contact <?php echo $ph ?><?php if ($name) echo " ({$name})" ?></h2>
+		  <form action="contact.php" method="GET" class="form-inline">
+		    <input type="hidden" name="s" value="<?php echo $start ?>">
+		    <input type="hidden" name="ph" value="<?php echo $ph ?>">
+		    <div class="form-group">
+			<label for="text-message">From:</label>
+			<select class="form-control" name="from" onChange="this.form.submit()">
+<?php
+	displayPhoneOptions($from);
+?>				
+			</select>
+ 		   </div>
+           <button class="btn btn-success" id="button-text">Go</button>
+		  </form>
+		  
+		  <br />
           <form id="text-controls" action="contact.php?ph=<?php echo urlencode($ph) ?>&from=<?php echo urlencode($from) ?>"
                 method="POST">
-           <p>(from <?php echo $from ?>)</p>
-		   <div class="form-group">
+           <div class="form-group">
 			<label for="text-message">Send a text message</label>
 			<input type="text" class="form-control" name="text"
 			       placeholder="Text message" value="<?php echo $text ?>">
@@ -114,23 +120,8 @@ if ($ph && $ph_valid) {
 		   <button class="btn btn-danger" id="button-hangup">Hangup</button>
 		   <h5 id="log"></h5>
 		  </form>
-<?php
-	}
-	// display log
-	if ($ph == $BROADCAST_CALLER_ID) {
-?>
-		  <h3 class="sub-header">Broadcast log (<?php echo $BROADCAST_CALLER_ID ?>)</h3>
-<?php
-	} elseif (array_key_exists($ph, $HOTLINES)) {
-?>
-		  <h3 class="sub-header">Hotline log (<?php echo $ph ?>)</h3>
-<?php
-	} else {
-?>
-          <h3 class="sub-header">Log</h3>
-<?php
-	}
-?>
+		  
+		  <h3 class="sub-header">Log</h3>
           <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or 
           unmark an item as responded to.</p>
 <?php
@@ -173,26 +164,15 @@ if (count($comms) >= $page) {
 	// no phone number provided - prompt for one
 ?>
 		  <h2 class="sub-header">Contact</h2>
-		  <form id="choose_number" action="contact.php">
+		  <form action="contact.php">
 		   <div class="form-group">
-			<label for="text-message">Call/text from</label>
+			<label for="text-message">Call / text from</label>
 			<select class="form-control" name="from">
 <?php
-	foreach ($HOTLINES as $hotline_number => $hotline) {
-?>
-			 <option value="<?php echo $hotline_number ?>" 
-				<?php if ($from == $hotline_number) { echo "selected"; } ?>><?php echo $hotline['name'] ?> - <?php echo $hotline_number ?></option>
-<?php
-	}
-	if (isset($BROADCAST_CALLER_ID) && $BROADCAST_CALLER_ID) {
-?>
-			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
-				<?php if ($from == $BROADCAST_CALLER_ID) { echo "selected"; } ?>>Broadcast - <?php echo $BROADCAST_CALLER_ID ?></option>
-<?php
-	}
+	displayPhoneOptions($from);
 ?>
 			</select>
- 		   </div>		  
+ 		   </div>
 		   <div class="form-group">
 			<label for="text-message">Phone number</label>
 			<input type="text" class="form-control" name="ph" 
@@ -206,4 +186,32 @@ if (count($comms) >= $page) {
 
 // display the footer
 include 'footer.php';
+
+/**
+* Display the options for phone numbers inside a select tag
+*
+* Options are each hotline, and the broadcast number.
+* 
+* @param string $selected
+*   The number that should be selected.
+*/
+
+function displayPhoneOptions($selected)
+{
+	global $HOTLINES, $BROADCAST_CALLER_ID;
+	
+	foreach ($HOTLINES as $hotline_number => $hotline) {
+?>
+			 <option value="<?php echo $hotline_number ?>" 
+				<?php if ($selected == $hotline_number) { echo "selected"; } ?>><?php echo $hotline_number ?> (<?php echo $hotline['name'] ?>)</option>
+<?php
+	}
+	if (isset($BROADCAST_CALLER_ID) && $BROADCAST_CALLER_ID) {
+?>
+			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
+				<?php if ($selected == $BROADCAST_CALLER_ID) { echo "selected"; } ?>><?php echo $BROADCAST_CALLER_ID ?> (Broadcast)</option>
+<?php
+	}
+}
+
 ?>

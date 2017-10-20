@@ -21,7 +21,7 @@ if (!db_db_query("SELECT * FROM languages ORDER BY keypress", $languages, $error
 			  <li role="presentation"><a href="hotline_staff.php">Staff</a></li>
 			  <li role="presentation"><a href="hotline_blocks.php">Blocks</a></li>
 			  <li role="presentation" class="active"><a href="hotline_languages.php">Languages</a></li>
-			  <li role="presentation"><a href="contact.php?ph=<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : '' ?>&hide=1">Log</a></li>
+			  <li role="presentation"><a href="log.php?ph=<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? urlencode($hotline_number) : '' ?>">Log</a></li>
 		    </ul>
 		    <br />
 		    
