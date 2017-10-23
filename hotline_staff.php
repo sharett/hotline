@@ -551,7 +551,14 @@ function addCallTime($call_time, &$error, &$message)
 		$error = "No language was specified.";
 		return false;
 	}
-	
+
+	// Ensure at least one checkbox is selected (for texts, calls, or
+	// answered alerts.
+	if (($call_time['texts'] != 'on') && ($call_time['calls'] != 'on') && ($call_time['answered_alerts'] != 'on')) {
+		$error = "No received type checkbox (texts, calls, or call answered alerts) was specified.";
+		return false;
+	}
+
 	// add a call_times record
 	$sql = "INSERT INTO call_times SET ".
 		"contact_id='".addslashes($call_time['id'])."',".
