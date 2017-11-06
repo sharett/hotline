@@ -67,7 +67,9 @@ $HOTLINES = array(
 		      'intro' => 'Just another hotline',
 		      'voicemail' => 'or press 0 for voicemail',
 		      'staff_prompt_1' => 'Just another hotline call in ', // language will be added here
-		      'staff_prompt_2' => '. Press 1 to accept.'),
+		      'staff_prompt_2' => '. Press 1 to accept.',
+              'text_error' => 'Unable to forward your text.  Please call in.',
+              'text_response' => 'Your message has been received.  Someone will respond shortly.'),
 );
 
 // Hotline prompts

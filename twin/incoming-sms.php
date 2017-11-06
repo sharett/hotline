@@ -119,7 +119,7 @@ function processHotlineText($from, $hotline_number, $body, $media, &$message, &$
 
 	// identify the texter
 	if (sms_whoIsCaller($contact_name, $from, $error) && $contact_name) {
-		$from_descriptive = " ({$contact_name})";
+		$from_descriptive .= " ({$contact_name})";
 	}
 
 	// is this number blocked?
@@ -136,23 +136,21 @@ function processHotlineText($from, $hotline_number, $body, $media, &$message, &$
 	// was anything sent?
 	if ($from && $body) {
 		// yes
-		$forwarded = "{$HOTLINE[$hotline_number]['name']} hotline text from {$from_descriptive}: {$body}";
+		$forwarded = "{$HOTLINES[$hotline_number]['name']} hotline text from {$from_descriptive}: {$body}";
 
 		// attempt to forward
 		if (!sms_send($numbers, $forwarded, $error, $hotline_number)) {
-			$error = "Unable to forward your text.";
+			$error = $HOTLINES[$hotline_number]['text_error'];
 		}
 	} else {
-		$error = "Nothing was received.";
+		$error = $HOTLINES[$hotline_number]['text_error'];
 	}
 
-	if ($error) {
-		$message = "There was a problem: {$error}";
-	} else {
+	if (!$error) {
 		// have we received a text from this number recently?
 		if (!hasTextedRecently($from, $hotline_number, $error)) {
 			// no, send an automated response
-			$message = "Your message has been received.  Someone will respond shortly.";
+			$message = $HOTLINES[$hotline_number]['text_response'];
 		}
 	}
 	
