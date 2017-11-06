@@ -24,7 +24,8 @@ sms_storeCallData($_REQUEST, $error);
 $to = $_REQUEST['To'];
 
 // load the list of languages
-if (!db_db_query("SELECT * FROM languages ORDER BY keypress", $languages, $error)) {
+$sql = "SELECT * FROM languages ORDER BY keypress";
+if (!db_db_query($sql, $languages, $error)) {
     // error!
 }
 
@@ -35,8 +36,10 @@ if (($to == $BROADCAST_CALLER_ID) && count($BROADCAST_VOICE_MESSAGES) > 0) {
 	foreach ($BROADCAST_VOICE_MESSAGES as $language_code => $message) {
 		sms_playOrSay($response, $message, $language_code);
 	}	
-} else {
+} elseif (array_key_exists($to, $HOTLINES)) {
 	// use hotline functionality
+	$hotline = $HOTLINES[$to];
+	
 	// wait for a key to be pressed
 	$gather = $response->gather(array(
 		'action' => 'incoming-voice-dial.php',
@@ -46,14 +49,15 @@ if (($to == $BROADCAST_CALLER_ID) && count($BROADCAST_VOICE_MESSAGES) > 0) {
 	);
 
 	// say the hotline intro
-	sms_playOrSay($gather, $HOTLINE_INTRO);
+	sms_playOrSay($gather, $hotline['intro']);
 
 	// and each of the language options
 	foreach ($languages as $language) {
+		sms_parseLanguagePrompt($to, $language['prompt'], $error);
 		sms_playOrSay($gather, $language['prompt'], $language['twilio_code']);
 	}
 
-	sms_playOrSay($gather, $HOTLINE_STRAIGHT_TO_VOICEMAIL);
+	sms_playOrSay($gather, $hotline['voicemail']);
 
 	// and handle a timeout
 	$response->redirect('incoming-voice-dial.php?Digits=TIMEOUT',

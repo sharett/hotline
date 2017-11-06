@@ -30,7 +30,7 @@
 			<div class="form-group">
 			  <label for="export_phone">Limit to phone: </label>
 			  <input type="text" class="form-control" name="export[phone]" id="export_phone" 
-			         placeholder="<?php echo $HOTLINE_CALLER_ID ? $HOTLINE_CALLER_ID : $BROADCAST_CALLER_ID ?>"
+			         placeholder="<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : $BROADCAST_CALLER_ID ?>"
 			         value="<?php echo $export['phone'] ?>">
 			</div>
 			<div class="form-group">

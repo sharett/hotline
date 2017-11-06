@@ -17,11 +17,12 @@ $connected_to = $_REQUEST['connected_to'];
 
 // record this call as answered, and as connected to the staff who took the call
 $_REQUEST['status'] = 'call answered';
+$hotline_number = $_REQUEST['To'];
 $_REQUEST['To'] = $connected_to;
 sms_storeCallData($_REQUEST, $error);
 
 // send a text to those who receive answer alerts
-if (!alertOfAnsweredCall($_REQUEST['From'], $connected_to, $error)) {
+if (!alertOfAnsweredCall($_REQUEST['From'], $connected_to, $hotline_number, $error)) {
 	db_error($error);
 }
 
@@ -40,6 +41,8 @@ db_databaseDisconnect();
 *   The phone number of the caller.
 * @param string $to
 *   The phone number of the answerer.
+* @param string $hotline_number
+*   The hotline number for this hotline.
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -47,9 +50,9 @@ db_databaseDisconnect();
 *   True if sent successfully.
 */
 
-function alertOfAnsweredCall($from, $to, &$error)
+function alertOfAnsweredCall($from, $to, $hotline_number, &$error)
 {
-	global $HOTLINE_NAME;
+	global $HOTLINES;
 	
 	// look up who is on duty who receives call answer alerts
 	$receives = array('calls' => false, 'texts' => false, 'answered_alerts' => true);
@@ -67,10 +70,13 @@ function alertOfAnsweredCall($from, $to, &$error)
 	foreach ($contacts as $contact) {
 		if ($contact['phone'] == $to) {
 			// don't send an alert to the person who just answered
-			//continue;
+			continue;
 		}
 		$numbers[] = $contact['phone'];
 	}
+	
+	// remove duplicates
+	$numbers = array_unique($numbers);
 	
 	// identify the caller
 	if (sms_whoIsCaller($contact_name, $from, $error) && $contact_name) {
@@ -83,10 +89,10 @@ function alertOfAnsweredCall($from, $to, &$error)
 	}
 
 	// compose the text
-    $body = "{$HOTLINE_NAME} hotline call from {$from} was answered by {$to}.";
+    $body = "{$HOTLINES[$hotline_number]['name']} hotline call from {$from} was answered by {$to}.";
 		
 	// send the texts
-	if (!sms_send($numbers, $body, $error)) {
+	if (!sms_send($numbers, $body, $error, $hotline_number)) {
 		return false;
 	}
 	

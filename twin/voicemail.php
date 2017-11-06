@@ -16,12 +16,14 @@ $response = new Twilio\Twiml();
 
 // URL parameters
 $language_id = $_REQUEST['language_id'];
+$hotline_number = $_REQUEST['To'];
 
 // load language data
 sms_loadLanguageById($language_id, $language, $error);
 
 // no one available to answer
 if ($language_id != 0) {
+	sms_parseLanguagePrompt($hotline_number, $language['voicemail'], $error);
     sms_playOrSay($response, $language['voicemail'], $language['twilio_code']);
 }
 

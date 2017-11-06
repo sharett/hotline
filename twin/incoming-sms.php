@@ -54,8 +54,8 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 	}
 	
 	// is this a hotline text?
-	if ($to == $HOTLINE_CALLER_ID) {
-		processHotlineText($from, $body, $media, $message, $error);
+	if (array_key_exists($to, $HOTLINES)) {
+		processHotlineText($from, $to, $body, $media, $message, $error);
 	}
 }
 
@@ -79,6 +79,8 @@ db_databaseDisconnect();
 * 
 * @param string $from
 *   The sending phone number
+* @param string $hotline_number
+*   The hotline number receiving the text
 * @param string $body
 *   The body of the text
 * @param array $media
@@ -92,8 +94,10 @@ db_databaseDisconnect();
 *   True unless a fatal error occurred
 */
 
-function processHotlineText($from, $body, $media, &$message, &$error)
+function processHotlineText($from, $hotline_number, $body, $media, &$message, &$error)
 {
+	global $HOTLINES;
+	
 	// clear variables
 	$message = '';
 	$error = '';
@@ -115,7 +119,7 @@ function processHotlineText($from, $body, $media, &$message, &$error)
 
 	// identify the texter
 	if (sms_whoIsCaller($contact_name, $from, $error) && $contact_name) {
-		$from_descriptive = " ({$contact_name})";
+		$from_descriptive .= " ({$contact_name})";
 	}
 
 	// is this number blocked?
@@ -132,23 +136,21 @@ function processHotlineText($from, $body, $media, &$message, &$error)
 	// was anything sent?
 	if ($from && $body) {
 		// yes
-		$forwarded = "Hotline text from {$from_descriptive}: {$body}";
+		$forwarded = "{$HOTLINES[$hotline_number]['name']} hotline text from {$from_descriptive}: {$body}";
 
 		// attempt to forward
-		if (!sms_send($numbers, $forwarded, $error)) {
-			$error = "Unable to forward your text.";
+		if (!sms_send($numbers, $forwarded, $error, $hotline_number)) {
+			$error = $HOTLINES[$hotline_number]['text_error'];
 		}
 	} else {
-		$error = "Nothing was received.";
+		$error = $HOTLINES[$hotline_number]['text_error'];
 	}
 
-	if ($error) {
-		$message = "There was a problem: {$error}";
-	} else {
+	if (!$error) {
 		// have we received a text from this number recently?
-		if (!hasTextedRecently($from, $error)) {
+		if (!hasTextedRecently($from, $hotline_number, $error)) {
 			// no, send an automated response
-			$message = "Your message has been received.  Someone will respond shortly.";
+			$message = $HOTLINES[$hotline_number]['text_response'];
 		}
 	}
 	
@@ -198,11 +200,13 @@ function processBroadcastText($from, $body, &$message, &$error)
 /**
 * Have we received a text recently from this number?
 *
-* If we've received a text from this number (to the hotline) in the past
+* If we've received a text from this number (to a hotline) in the past
 * week, return true.  Exclude the current text we are replying to.
 * 
 * @param string $from
 *   The phone number to check
+* @param string $hotline_number
+*   The hotline number to check
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -211,12 +215,10 @@ function processBroadcastText($from, $body, &$message, &$error)
 *   occurred.
 */
 
-function hasTextedRecently($from, &$error)
+function hasTextedRecently($from, $hotline_number, &$error)
 {
-	global $HOTLINE_CALLER_ID;
-	
 	$sql = "SELECT COUNT(*) FROM communications ".
-		"WHERE phone_to='".addslashes($HOTLINE_CALLER_ID)."' AND ".
+		"WHERE phone_to='".addslashes($hotline_number)."' AND ".
 		" phone_from='".addslashes($from)."' AND status='text' AND ".
 		" twilio_sid != '".addslashes($_REQUEST['MessageSid'])."' AND ".
 		" communication_time > DATE_SUB(NOW(), INTERVAL 7 DAY)";
