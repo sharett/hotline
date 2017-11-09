@@ -248,7 +248,7 @@ function createCallTimeRangeTableCells(
         }
         return true;
     } else {
-        echo "<td></td><td></td>";
+        echo '<td colspan="2"></td>';
         return false;
     }
 }
@@ -375,9 +375,12 @@ function addCallTime($call_time, $call_time_languages, &$error, &$message)
 
     // Ensure at least one checkbox is selected (for texts, calls, or
     // answered alerts.
-    $texts = (isset($call_time['texts']) && ($call_time['texts'] == 'on'));
-    $calls = (isset($call_time['calls']) && ($call_time['calls'] == 'on'));
-    $alerts = (isset($call_time['answered_alerts']) && ($call_time['answered_alerts'] == 'on'));
+    $texts = (isset($call_time['receive_texts']) &&
+            ($call_time['receive_texts'] == 'on'));
+    $calls = (isset($call_time['receive_calls']) &&
+            ($call_time['receive_calls'] == 'on'));
+    $alerts = (isset($call_time['receive_call_answered_alerts']) &&
+            ($call_time['receive_call_answered_alerts'] == 'on'));
     if (!$texts && !$calls && !$alerts) {
         $error = "The call time record could not be added because no ".
                 "'received type' checkbox (texts, calls, or call ".

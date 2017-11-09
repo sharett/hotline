@@ -68,7 +68,11 @@ foreach ($contacts as $contact) {
     // removed.
     if (count($call_times) == 0) {
         ?>
-        <td></td><td></td><td></td><td></td><td></td><td>
+        <td colspan="5"></td><td>
+          <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
+                echo $contact['id'] ?>"
+                title="Add a call time">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=removestaff&id=<?php
                 echo $contact['id'] ?>"
               onClick="return confirm('Are you sure you want to remove this staff entry?');"
@@ -109,7 +113,7 @@ foreach ($contacts as $contact) {
                 // Add the start of a table row, and a couple of
                 // empty cells to pad it to the left, since the
                 // contact info cells do not need to be repeated.
-                echo "<tr><td></td><td></td>";
+                echo '<tr><td colspan="2"></td>';
             }
 
             // Get cell decorations for the contents of any table
@@ -175,12 +179,7 @@ foreach ($contacts as $contact) {
         // done.
         } ?>
       <tr>
-        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>
-          <?php
-
-    // Close the else block; call times have all been processed for
-    // this contact.
-    } ?>
+        <td colspan="7"></td><td>
           <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
                 echo $contact['id'] ?>"
               title="Add a call time">
@@ -189,7 +188,11 @@ foreach ($contacts as $contact) {
       </tr>
       <?php
 
-// Close the foreach loop; iteration over all the contacts is done.
+    // Close the else block; call times have all been processed for
+    // this contact.
+    }
+
+    // Close the foreach loop; iteration over all the contacts is done.
 }
       ?>
     </tbody>

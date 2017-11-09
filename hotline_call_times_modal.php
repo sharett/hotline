@@ -181,7 +181,7 @@ if (($call_time['language_id'] == null) || ($call_time['language_id'] == $langua
           <a class="btn btn-default"
                 href="hotline_staff.php?display_type=<?php echo $display_type ?>"
                 role="button">Close</a>
-          <button type="submit" class="btn btn-primary">Add</button>
+          <button type="submit" class="btn btn-primary"><?php echo $modal_action ?></button>
         </div>
       </form>
     </div><!-- /.modal-content -->

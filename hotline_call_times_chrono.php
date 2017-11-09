@@ -210,6 +210,10 @@ if ($TEST_MODE) {
 
             // Action buttons.?>
             <td>
+              <a href="hotline_staff.php?display_type=chronological&action=addcalltimemodal&id=<?php
+                    echo $call_time['staff_id'] ?>"
+                    title="Add a call time for this staff member">
+                  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
               <a href="hotline_staff.php?display_type=chronological&action=editcalltimemodal&id=<?php
                     echo $call_time['id'] ?>"
                     title="Edit this call time">
@@ -259,6 +263,7 @@ function getResultsUsingHybridQuery()
                 "call_times.enabled AS enabled_choice, ".
                 "languages.language AS language_choice, ".
                 "contacts.contact_name AS staff_name, ".
+                "contacts.id AS staff_id, ".
                 "contacts.phone ".
             "FROM ".
                 "call_times ".
@@ -289,6 +294,7 @@ function getResultsUsingHybridQuery()
             "call_times.enabled AS enabled_choice, ".
             "languages.language AS language_choice, ".
             "contacts.contact_name AS staff_name, ".
+            "contacts.id AS staff_id, ".
             "contacts.phone ".
         "FROM ".
             "call_times ".
@@ -382,6 +388,7 @@ function getResultsUsingPureSqlQuery()
                 "call_times.enabled AS enabled_choice, ".
                 "languages.language AS language_choice, ".
                 "contacts.contact_name AS staff_name, ".
+                "contacts.id AS staff_id, ".
                 "contacts.phone ".
             "FROM ".
                 "call_times ".
