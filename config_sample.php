@@ -12,9 +12,6 @@
 // The name of the website
 $WEBSITE_NAME = 'Hotline admin';
 
-// The hotline name
-$HOTLINE_NAME = 'Just Another Hotline';
-
 // Filesystem path to the document root
 $HTML_BASE = '/home/hotline/html/';
 
@@ -47,6 +44,14 @@ $BROADCAST_WELCOME = "Welcome to the ". $HOTLINE_NAME . " alert list. ".
 	"text ON.";
 $BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
 
+// If set, callers will hear this message in each language and then it will hang up.  The format is an array, 
+// with each key the language code, and the value the text to read in that language.  "es-MX" is Spanish, 
+// "en-US" is English.
+// Example: 'en-US' => "Goodbye"
+$BROADCAST_VOICE_MESSAGES = array(
+
+);
+
 // List users authorized to send broadcast texts here.  Leave blank to allow all users.
 $BROADCAST_AUTHORIZED_USERS = array();
 
@@ -55,15 +60,20 @@ $BROADCAST_PROGRESS_MARK_EVERY = 3;
 
 // **** HOTLINE ****
 
-// Main hotline number
-$HOTLINE_CALLER_ID = '+1NXXNXXXXXX';
+// Each hotline is an element of this array.  The array key is the hotline number, and the values are prompts.
+$HOTLINES = array(
+	'+1NXXNXXXXXX' => 
+		array('name' => 'Just another hotline',
+		      'intro' => 'Just another hotline',
+		      'voicemail' => 'or press 0 for voicemail',
+		      'staff_prompt_1' => 'Just another hotline call in ', // language will be added here
+		      'staff_prompt_2' => '. Press 1 to accept.',
+              'text_error' => 'Unable to forward your text.  Please call in.',
+              'text_response' => 'Your message has been received.  Someone will respond shortly.'),
+);
 
 // Hotline prompts
-$HOTLINE_INTRO = $HOTLINE_NAME . ' hotline. ';
 $HOTLINE_GOODBYE = 'Goodbye.';
-$HOTLINE_STAFF_PROMPT_1 = $HOTLINE_NAME . ' hotline call in '; // language will be added here
-$HOTLINE_STAFF_PROMPT_2 = '. Press 1 to accept.';
-$HOTLINE_STRAIGHT_TO_VOICEMAIL= 'or press 0 for voicemail';
 $HOTLINE_CONNECTING_TO_CALLER = 'Connecting you to the caller.';
 $HOTLINE_CALLER_HUNG_UP = 'The caller hung up or someone else took the call.  Goodbye.';
 

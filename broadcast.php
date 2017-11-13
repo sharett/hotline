@@ -55,6 +55,19 @@ if ($action == 'broadcast_response' && $authorized) {
 	}
 }
 
+// close the broadcast update?
+if ($action == 'broadcast_close' && $authorized) {
+	if ($confirmed == 'on') {
+		// confirmed, close the broadcast
+		if (sms_closeBroadcastResponse($error)) {
+			$success = "The broadcast update was closed.";
+		}
+	} else {
+		// checkbox wasn't checked
+		$error = "Please check the confirmation checkbox.";
+	}
+}
+
 // get the count of the active numbers
 $sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
 db_db_getone($sql, $broadcast_count, $error);
@@ -103,7 +116,7 @@ if (!empty($success)) {
 			<li role="presentation" class="active"><a href="broadcast.php">Send</a></li>
 			<li role="presentation"><a href="broadcast_admin.php">Import &amp; Remove</a></li>
 			<li role="presentation"><a href="broadcast_admin.php?action=list">List</a></li>
-			<li role="presentation"><a href="contact.php?ph=<?php echo $BROADCAST_CALLER_ID ?>&hide=1">Log</a></li>
+			<li role="presentation"><a href="log.php?ph=<?php echo urlencode($BROADCAST_CALLER_ID) ?>">Log</a></li>
 		  </ul>
 		  <br />
 		  
@@ -186,6 +199,17 @@ if ($broadcast_response) {
 		  <br />
 		  <h4>Responders:</h4>
 		  <p><?php echo implode(', ', $broadcast_response_confirmed) ?></p>
+
+		  <h3>Close broadcast</h3>
+		  <form id="broadcast-close" action="broadcast.php" method="POST">
+		   <input type="hidden" name="action" value="broadcast_close">
+		   <div class="checkbox">
+			 <label>
+			   <input type="checkbox" name="confirm"> Confirm closing this broadcast
+			 </label>
+		   </div>
+		   <button class="btn btn-danger" id="button-text">Close broadcast</button>
+		  </form>
 <?php
 }
 
@@ -229,6 +253,18 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	$text = trim($text) . $request_response;
 	if (!$text) {
 		$error = "No text was provided.";
+		return false;
+	}
+	
+	// confirm that the text is not identical to the previous broadcast text sent
+	$sql = "SELECT * FROM communications WHERE phone_to LIKE 'BROADCAST%' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	if (!db_db_getrow($sql, $last_broadcast, $error)) {
+		return false;
+	}
+	if ($last_broadcast['body'] == $text) {
+		// it is identical!
+		$error = "This text is identical to the last one sent - aborting!";
 		return false;
 	}
 	
@@ -291,6 +327,18 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 	$text = trim($text);
 	if (!$text) {
 		$error = "No text was provided.";
+		return false;
+	}
+	
+	// confirm that the text is not identical to the previous broadcast text sent
+	$sql = "SELECT * FROM communications WHERE phone_to LIKE 'BROADCAST%' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	if (!db_db_getrow($sql, $last_broadcast, $error)) {
+		return false;
+	}
+	if ($last_broadcast['body'] == $text) {
+		// it is identical!
+		$error = "This text is identical to the last one sent - aborting!";
 		return false;
 	}
 	

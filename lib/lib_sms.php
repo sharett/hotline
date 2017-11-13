@@ -25,8 +25,10 @@ use Twilio\Twiml;
 *   Array of contacts to be loaded.
 * @param int $language_id
 *   The language the contact must speak.  If zero, all languages will be returned.
-* @param bool $texting
-*   If true, the contact must support texting.
+* @param array $receives
+*   An array of boolean values, with keys 'calls', 'texts' and 'answered_alerts'.  If
+*   these are set to true, then only contacts that support receiving these will be
+*   returned.
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -34,17 +36,21 @@ use Twilio\Twiml;
 *   True if retrieved successfully.
 */
 
-function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
+function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 {
     $day = date('D');
     $weekend = ($day == 'Sun' || $day == 'Sat');
-
+	
     // Follow me numbers
-    $sql = "SELECT DISTINCT contacts.* FROM call_times ".
+    $sql = "SELECT DISTINCT contacts.*, call_times.receive_texts, call_times.receive_calls, ".
+		"call_times.receive_call_answered_alerts ".
+		"FROM call_times ".
         "LEFT JOIN contacts ON contacts.id = call_times.contact_id ".
         "WHERE enabled='y' AND ".
         ($language_id ? "language_id = '".addslashes($language_id)."' AND " : "") .
-        ($texting ? "receive_texts = 'y' AND " : "") .
+        ($receives['texts'] ? "receive_texts = 'y' AND " : "") .
+        ($receives['calls'] ? "receive_calls = 'y' AND " : "") .
+        ($receives['answered_alerts'] ? "receive_call_answered_alerts = 'y' AND " : "") .
         "((day='all' OR day='{$day}' OR ".
         ($weekend ? "day='weekends'" : "day='weekdays'") .
         ") AND ".
@@ -69,9 +75,7 @@ function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
 * @param string &$error
 *   An error if one occurred.
 * @param string $from = ''
-*   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
-* @param string $from = ''
-*   The number to send from.  Defaults to the $HOTLINE_CALLER_ID constant.
+*   The number to send from.  Defaults to the first $HOTLINES key.
 * @param int $progress_every = 0
 *   If nonzero, displays a progress mark after this many messages are sent.
 *   
@@ -81,7 +85,7 @@ function sms_getActiveContacts(&$contacts, $language_id, $texting, &$error)
 
 function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 {
-	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINES;
 	
 	if (!count($numbers)) {
 		// there are no messages to send
@@ -92,9 +96,11 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 		echo '<p>Sending ';
 	}
 	
-	// default from address
+	// default from number
 	if (!$from) {
-		$from = $HOTLINE_CALLER_ID;
+		if (!sms_getFirstHotline($from, $hotline, $error)) {
+			return false;
+		}
 	}
 	
 	// create a Twilio client
@@ -151,7 +157,7 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 * @param string $url
 *   The URL for Twilio to request when connected
 * @param string $from
-*   The number to place the call from.  Defaults to the $HOTLINE_CALLER_ID constant.
+*   The number to place the call from.  Defaults to the first $HOTLINES number.
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -161,11 +167,13 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 
 function sms_placeCalls($numbers, $url, $from, &$error)
 {
-	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINE_CALLER_ID;
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $HOTLINES;
 	
-	// default from number
+	// default from address
 	if (!$from) {
-		$from = $HOTLINE_CALLER_ID;
+		if (!sms_getFirstHotline($from, $hotline, $error)) {
+			return false;
+		}
 	}
 	
 	// create a Twilio client
@@ -330,7 +338,7 @@ function sms_getQueueInfo($name, &$queue, &$error)
 *   An error if one occurred.
 *   
 * @return bool
-*   True if sent.
+*   True if stored.
 */
 
 function sms_storeCallData($data, &$error)
@@ -502,12 +510,12 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 
 function sms_updateNumber($enable, $from, $to, &$response, &$error)
 {
-	global $BROADCAST_CALLER_ID, $HOTLINE_CALLER_ID, $BROADCAST_WELCOME, $BROADCAST_GOODBYE;
+	global $BROADCAST_CALLER_ID, $HOTLINES, $BROADCAST_WELCOME, $BROADCAST_GOODBYE;
 	
 	$enabled = $enable ? 'y' : 'n';
 	
 	// disable/enable call times for volunteers
-	if ($to == $HOTLINE_CALLER_ID) {
+	if (array_key_exists($to, $HOTLINES)) {
 		$sql = "UPDATE call_times ".
 			"LEFT JOIN contacts ON call_times.contact_id = contacts.id ".
 			"SET enabled='".addslashes($enabled)."' ".
@@ -627,10 +635,10 @@ function sms_normalizePhoneNumber(&$number, &$error)
 /**
 * Load the last broadcast text that requested a response
 *
-* ...
+* If the last broadcast response has been closed, return nothing.
 * 
 * @param string &$broadcast_response
-*   Set to the latest broadcast text that requested a response
+*   Set to the latest open broadcast text that requested a response
 * @param string &$error
 *   An error if one occurred.
 *   
@@ -642,7 +650,29 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 {
 	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE' ".
 		"ORDER BY communication_time DESC LIMIT 1";
-	return db_db_getrow($sql, $broadcast_response, $error);
+	if (!db_db_getrow($sql, $broadcast_response, $error)) {
+		return false;
+	}
+	
+	if (empty($broadcast_response)) {
+		return true;
+	}
+	
+	// load the last 'BROADCAST_RESPONSE_CLOSED' entry
+	$sql = "SELECT * FROM communications WHERE phone_to='BROADCAST_RESPONSE_CLOSED' ".
+		"ORDER BY communication_time DESC LIMIT 1";
+	if (!db_db_getrow($sql, $broadcast_response_closed, $error)) {
+		return false;
+	}
+	
+	// is the closed entry after the initial entry?
+	if ($broadcast_response_closed['communication_time'] >
+		$broadcast_response['communication_time']) {
+		// yes, it has been closed - clear the response
+		$broadcast_response = array();
+	}
+	
+	return true;
 }
 
 /**
@@ -732,6 +762,35 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 	}
 	
 	return true;
+}
+
+/**
+* Load the last broadcast text that requested a response
+*
+* If the last broadcast response has been closed, return nothing.
+* 
+* @param string &$broadcast_response
+*   Set to the latest open broadcast text that requested a response
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_closeBroadcastResponse(&$error)
+{
+	global $BROADCAST_CALLER_ID;
+	
+	// store a BROADCAST_RESPONSE_CLOSED text
+	$data = array(
+		'From' => $BROADCAST_CALLER_ID,
+		'To' => 'BROADCAST_RESPONSE_CLOSED',
+		'Body' => '',
+		'MessageSid' => 'text'
+	);
+
+	return sms_storeCallData($data, $error);
 }
 
 /**
@@ -864,6 +923,86 @@ function sms_playOrSay(&$gather, $string, $voice_code = null)
         $gather->say($string,
 		array('voice' => 'alice', 'language' => $voice_code));
     }
+}
+
+/**
+* Retrieve the first hotline number and prompts, if it exists.
+*
+* ...
+* 
+* @param string &$number
+*   The first hotline number.
+* @param array &$hotline
+*   An array of prompts for this hotline.
+* @param string &$error
+*   An error if one occurred.
+*
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_getFirstHotline(&$number, &$hotline, &$error)
+{
+	global $HOTLINES;
+	
+	$number = '';
+	$hotline = array();
+	
+	if (!isset($HOTLINES) || !count($HOTLINES)) {
+		$error = "No hotlines are defined.";
+		return false;
+	}
+	
+	$hotline = reset($HOTLINES);
+	$number = key($HOTLINES);
+	
+	return ($hotline && $number);
+}
+
+/**
+* Parse a language prompt to pull out a specific hotline's prompt
+*
+* Multiple prompts are encoded in JSON notation as a single array.  Each key
+* is a hotline number, each value is the prompt.
+* 
+* @param string $hotline_number
+*   The hotline number.
+* @param string &$prompt
+*   Passed as the original prompt; set to the parsed prompt
+* @param string &$error
+*   An error if one occurred.
+*
+* @return bool
+*   True unless an error occurred.
+*/
+
+function sms_parseLanguagePrompt($hotline_number, &$prompt, &$error)
+{
+	// is this json?
+	$prompt = trim($prompt);
+	if (substr($prompt, 0, 1) != '{' || substr($prompt, -1) != '}') {
+		// no, make no changes
+		return true;
+	}
+	
+	$prompts = json_decode($prompt, true);
+	if ($prompts === false) {
+		$error = "JSON decode error.";
+		return false;
+	}
+	
+	if (!is_array($prompts)) {
+		$error = "Prompts are not an array of options.";
+		return false;
+	}
+	
+	if (!array_key_exists($hotline_number, $prompts)) {
+		$error = "Hotline number is not listed in prompts.";
+		return false;
+	}
+	
+	$prompt = $prompts[$hotline_number];
+	return true;
 }
 
 ?>

@@ -4,7 +4,7 @@ Hotline is a phone bank hotline and mass texting tool that uses Twilio.
 
 ## Features
 
-Hotline:
+Hotlines:
 * Direct incoming calls and texts to hotline staff based on day of week, time of day and language ability.
 * Send texts and make calls from the browser.
 
@@ -42,7 +42,7 @@ It is not production ready and is very much in progress.
   * The $TWILIO_ACCOUNT_SID and $TWILIO_AUTH_TOKEN can be found from the [Twilio Account Dashboard] (https://www.twilio.com/user/account).
   * Put the database credentials in the $HOTLINE_DB_ settings.
   * For mass texting, set the $BROADCAST_ settings including the phone number to use in the '+1NXXNXXXXXX' format ($BROADCAST_CALLER_ID).
-  * For a hotline, set the $HOTLINE_ settings including the phone number to use in the '+1NXXNXXXXXX' format ($HOTLINE_CALLER_ID).
+  * For hotlines, set the $HOTLINE_ and $HOTLINES settings including the phone number to use in the '+1NXXNXXXXXX' format.
 
 * In your Twilio account, configure each number to make a webhook request to the application.  Use the HTTP basic security you set above (replace username and password and the web address below as appropriate).  For voice, use:
    
@@ -57,6 +57,8 @@ It is not production ready and is very much in progress.
   * Once you've created the TwiML app, copy its SID and set the $TWILIO_TWIML_APP_SID setting in config.php to it.
 
 * By default, English and Spanish are set - edit the "languages" table to modify this.  The Twilio code is the language that the voice "alice" will use to speak the text.
+  * Each of the prompts may be either the text to be spoken, or a URL to play.  
+  * Prompts may also be a valid JSON encoded array, with each key the hotline number in the '+1NXXNXXXXXX' format, and each value the prompt to be played for that hotline.
 
 * The broadcast texting system sends progress marks to the browser as texts are being sent.  It can take some time to send the texts.  You may need to configure the web server and PHP to not buffer these progress marks.
   * For Nginx, add or update "gzip off;" and "proxy_buffering off;" to the /etc/nginx/nginx.conf file.
@@ -71,11 +73,11 @@ The hotline interface supports viewing and editing active staff (those signed up
 
 Voice calls:
 
-* Says: “($HOTLINE_NAME) hotline.  Press 1 for English. Para español oprima dos.”
+* Says: “($HOTLINES['name']) hotline.  Press 1 for English. Para español oprima dos.”
 * Wait 15 seconds or for a language to be chosen. On timeout, defaults to English.
 * Rings to the caller, and simultaneously calls all available hotline staff, for 30 seconds.
 * Any hotline staff who answer hear: 
-  * “($HOTLINE_NAME) hotline call.  Press 1 to accept.”
+  * “($HOTLINES['name']) hotline call.  Press 1 to accept.”
   * If they press 1: “Connecting you to the caller.”
   * Otherwise, “Goodbye.” and hangs up.
 * If any hotline staff accept the call, they are connected to the caller.
@@ -92,7 +94,7 @@ Text messages:
   * Text is forwarded to all hotline staff on duty, in this format: “Hotline text from (sender's phone number): (original text)”
   * Response from initial text, or after a week of no texts received from the person: “Your message has been received.  Someone will respond shortly.”
 
-## development guidelines
+## Development guidelines
 
 * New feature development:
   * Branch or fork to a a branch named after the desired change

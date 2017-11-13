@@ -23,6 +23,7 @@ sms_storeCallData($_REQUEST, $error);
 $url = $_REQUEST['RecordingUrl'];
 $duration = $_REQUEST['RecordingDuration'];
 $from = $_REQUEST['From'];
+$hotline_number = $_REQUEST['To'];
 $language_id = $_REQUEST['language_id'];
 
 // load language data
@@ -33,10 +34,11 @@ if (!$url) {
 	sms_playOrSay($response, 'An error occurred - your voicemail was not received. Goodbye.');
 } else {
 	// send an text alerting the volunteers of a voicemail
-	if (!alertVolunteersOfVoicemail($from, $url, $duration, $error)) {
+	if (!alertVolunteersOfVoicemail($from, $hotline_number, $url, $duration, $error)) {
 		sms_playOrSay($response, 'An error occurred - your voicemail was not received. Goodbye.');
 	} else {
 		// voicemail was received successfully
+		sms_parseLanguagePrompt($hotline_number, $language['voicemail_received'], $error);
 		sms_playOrSay($response, $language['voicemail_received'], $language['twilio_code']);
 	}
 }	
@@ -54,6 +56,8 @@ db_databaseDisconnect();
 * 
 * @param string $from
 *   The phone number the voicemail is from.
+* @param string $hotline_number
+*   The phone number of the hotline.
 * @param string $url
 *   The URL to listen to the voicemail.
 * @param int $duration
@@ -65,16 +69,13 @@ db_databaseDisconnect();
 *   True if sent successfully.
 */
 
-function alertVolunteersOfVoicemail($from, $url, $duration, &$error)
+function alertVolunteersOfVoicemail($from, $hotline_number, $url, $duration, &$error)
 {
-	global $HOTLINE_NAME;
+	global $HOTLINES;
 	
-	// compost the text
-    $body = "{$HOTLINE_NAME} hotline has received a {$duration} second message from {$from}. ".
-		"Log in to the website to listen to this voicemail.";
-		
-	// look up who is on duty
-	if (!sms_getActiveContacts($contacts, 0 /* no language restriction */, true /* texting */, $error)) {
+	// look up who is on duty who receives texts or answered alerts
+	$receives = array('calls' => false, 'texts' => true, 'answered_alerts' => true);
+	if (!sms_getActiveContacts($contacts, 0 /* no language restriction */, $receives, $error)) {
 		return false;
 	}
 	
@@ -94,8 +95,12 @@ function alertVolunteersOfVoicemail($from, $url, $duration, &$error)
 		$from .= " ({$contact_name})";
 	}
 
+	// compose the text
+    $body = "{$HOTLINES[$hotline_number]['name']} hotline has received a {$duration} second message from {$from}. ".
+		"Log in to the website to listen to this voicemail.";
+		
 	// send the texts
-	if (!sms_send($numbers, $body, $error)) {
+	if (!sms_send($numbers, $body, $error, $hotline_number)) {
 		return false;
 	}
 	

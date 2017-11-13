@@ -68,6 +68,8 @@ CREATE TABLE `call_times` (
   `earliest` time NOT NULL,
   `latest` time NOT NULL,
   `receive_texts` enum('y','n') NOT NULL DEFAULT 'y',
+  `receive_calls` enum('y','n') NOT NULL DEFAULT 'y',
+  `receive_call_answered_alerts` enum('y','n') NOT NULL DEFAULT 'n',
   `language_id` int(11) UNSIGNED NOT NULL DEFAULT '0',
   `enabled` enum('y','n') NOT NULL DEFAULT 'y'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Defines days and times that a volunteer will be called.';
@@ -127,9 +129,9 @@ CREATE TABLE `languages` (
   `id` int(11) UNSIGNED NOT NULL,
   `language` varchar(25) NOT NULL,
   `keypress` int(1) UNSIGNED NOT NULL,
-  `prompt` varchar(255) NOT NULL,
-  `voicemail` varchar(255) NOT NULL DEFAULT '',
-  `voicemail_received` varchar(255) NOT NULL DEFAULT '',
+  `prompt` text NOT NULL,
+  `voicemail` text NOT NULL,
+  `voicemail_received` text NOT NULL,
   `twilio_code` varchar(15) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Languages the hotline supports';
 

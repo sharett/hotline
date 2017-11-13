@@ -17,6 +17,7 @@ db_databaseConnect();
 // URL parameters
 $language_keypress = $_REQUEST['Digits'];
 $from = $_REQUEST['From'];
+$to = $_REQUEST['To'];
 $call_status = $_REQUEST['CallStatus'];
 
 $response = new Twilio\Twiml();
@@ -25,7 +26,7 @@ $response = new Twilio\Twiml();
 if ($call_status != 'completed') {
     // keypress 0 indicates that the caller wants to go straight to voicemail
     // also send to voicemail if this number is blocked
-    if ($language_keypress == '0' || sms_isNumberBlocked($from)) {
+    if ($language_keypress == '0' || sms_isNumberBlocked($from, $error)) {
         $response->redirect('voicemail.php?language_id=0');
     } else {
 		// load the language data
@@ -33,14 +34,14 @@ if ($call_status != 'completed') {
 		$language_id = (int)$language['id'];
 
 		// get the staff's phone numbers to call
-		getNumbersToCall($from, $language_id, $enqueue_anyway, $numbers, $error);
+		getNumbersToCall($from, $to, $language_id, $enqueue_anyway, $numbers, $error);
 
 		// anyone to call?
 		if (count($numbers) || $enqueue_anyway) {
 			// initiate calls to each of these staff
 			if (count($numbers)) {
 				sms_placeCalls($numbers, $TWILIO_INTERFACE_WEBROOT . 'screen-call.php?language_id=' . $language_id,
-					$HOTLINE_CALLER_ID, $error);
+					$to, $error);
 			}
 			
 			// enqueue the caller
@@ -69,6 +70,8 @@ db_databaseDisconnect();
 * 
 * @param string $from
 *   The person who is calling the hotline
+* @param string $to
+*   The hotline number being called
 * @param int $language_id
 *   The language they are requesting
 * @param bool &$enqueue_anyway
@@ -83,15 +86,14 @@ db_databaseDisconnect();
 *   True unless an error occurred
 */
 
-function getNumbersToCall($from, $language_id, &$enqueue_anyway, &$numbers, &$error)
+function getNumbersToCall($from, $to, $language_id, &$enqueue_anyway, &$numbers, &$error)
 {
-	global $HOTLINE_CALLER_ID;
-	
 	$call_anyway = false;
 	$numbers = array();
 	
-	// who should we call given the current day, time and language?
-	if (!sms_getActiveContacts($contacts, $language_id, false /* not texting */, $error)) {
+	// whom should we call given the current day, time and language?
+	$receives = array('calls' => true, 'texts' => false, 'answered_alerts' => false);
+	if (!sms_getActiveContacts($contacts, $language_id, $receives, $error)) {
 		return false;
 	}
 
@@ -105,7 +107,7 @@ function getNumbersToCall($from, $language_id, &$enqueue_anyway, &$numbers, &$er
 	
 	// check the currently active calls coming from this number, and 
 	// don't call people who are already on a call
-	if (!sms_getActiveCalls($HOTLINE_CALLER_ID, '', $active_calls, $error)) {
+	if (!sms_getActiveCalls($to, '', $active_calls, $error)) {
 		return false;
 	}
 	
@@ -118,7 +120,7 @@ function getNumbersToCall($from, $language_id, &$enqueue_anyway, &$numbers, &$er
 		// don't call people already on a call
 		$in_progress = false;
 		foreach ($active_calls as $call) {
-			if ($call['From'] == $HOTLINE_CALLER_ID &&
+			if ($call['From'] == $to &&
 				$call['To'] == $contact['phone']) {
 				// an active call is in progress
 				$in_progress = true;

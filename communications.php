@@ -25,7 +25,7 @@
 $from_url = !empty($from) ? ("&from=" . urlencode($from)) : '';
 
 foreach ($comms as $comm) {
-	$not_responded = !$comm['responded'] && $comm['phone_to'] == $HOTLINE_CALLER_ID && 
+	$not_responded = !$comm['responded'] && array_key_exists($comm['phone_to'], $HOTLINES) && 
 	    ($comm['status'] == 'text' || $comm['status'] == 'voicemail') && 
 	    strtolower($comm['body']) != 'off' && strtolower($comm['body']) != 'on';
 ?>
