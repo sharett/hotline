@@ -162,6 +162,10 @@ foreach ($contacts as $contact) {
             // that have not changed can be output as blank table cells.
             $last_call_time = $call_time; ?>
         <td>
+          <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
+                echo $contact['id'] ?>"
+                title="Add a call time for this staff member">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=editcalltimemodal&id=<?php
                 echo $call_time['id'] ?>"
                 title="Edit this call time">
@@ -175,21 +179,12 @@ foreach ($contacts as $contact) {
       </tr>
       <?php
 
-        // Close the foreach loop; iteration over the call times is
-        // done.
-        } ?>
-      <tr>
-        <td colspan="7"></td><td>
-          <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
-                echo $contact['id'] ?>"
-              title="Add a call time">
-            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
-        </td>
-      </tr>
-      <?php
+            // Close the foreach loop; iteration over the call times is
+            // done.
+        }
 
-    // Close the else block; call times have all been processed for
-    // this contact.
+        // Close the else block; call times have all been processed for
+        // this contact.
     }
 
     // Close the foreach loop; iteration over all the contacts is done.
