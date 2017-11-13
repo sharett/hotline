@@ -4,8 +4,8 @@
 * Communications log
 *
 * Show the latest calls and texts.
-* 
-* 
+*
+*
 */
 
 require_once 'config.php';
@@ -24,26 +24,36 @@ $page = 50;
 
 // Mark an item as responded, or not responded
 if ($mark) {
-	sms_markCommunication($mark, true /* mark responded */, $error);
-} else if ($unmark) {
-	sms_markCommunication($unmark, false /* mark not responded */, $error);
+    sms_markCommunication($mark, true /* mark responded */, $error);
+} elseif ($unmark) {
+    sms_markCommunication($unmark, false /* mark not responded */, $error);
 }
 
 // Communications
 $sql = "SELECT communications.*,contacts_from.contact_name AS from_contact, contacts_to.contact_name AS to_contact ".
-	"FROM communications ".
-	"LEFT JOIN contacts AS contacts_from ON contacts_from.phone = communications.phone_from ".
-	"LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
-	($ph ? ("WHERE communications.phone_from = '".addslashes($ph)."' OR ".
-		    "      communications.phone_to = '".addslashes($ph)."' ") : '') .
-	"ORDER BY communication_time DESC LIMIT ".addslashes($start).",{$page}";
+    "FROM communications ".
+    "LEFT JOIN contacts AS contacts_from ON contacts_from.phone = communications.phone_from ".
+    "LEFT JOIN contacts AS contacts_to ON contacts_to.phone = communications.phone_to ".
+    ($ph ? ("WHERE communications.phone_from = '".addslashes($ph)."' OR ".
+            "      communications.phone_to = '".addslashes($ph)."' ") : '') .
+    "ORDER BY communication_time DESC LIMIT ".addslashes($start).",{$page}";
 if (!db_db_query($sql, $comms, $error)) {
-?><div class="alert alert-danger" role="alert"><?php echo $error ?></div><?php
+    ?><div class="alert alert-danger" role="alert"><?php echo $error ?></div><?php
 }
 
 ?>
-          <h2 class="sub-header">Log</h2>
-          <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or 
+        <h2 class="sub-header">Hotline</h2>
+          <ul class="nav nav-pills">
+            <li role="presentation"><a href="hotline_active_calls.php">Active Calls</a></li>
+            <li role="presentation"><a href="hotline_staff.php">Staff</a></li>
+            <li role="presentation"><a href="hotline_blocks.php">Blocks</a></li>
+            <li role="presentation"><a href="hotline_languages.php">Languages</a></li>
+            <li role="presentation" class="active"><a href="log.php?ph=<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? urlencode($hotline_number) : '' ?>">Log</a></li>
+          </ul>
+          <br />
+
+          <h3 class="sub-header">Log</h3>
+          <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or
           unmark an item as responded to.</p>
           <form id="choose_number" action="log.php" method="GET" class="form-inline">
 		    <input type="hidden" name="s" value="<?php echo $start ?>">
@@ -52,18 +62,22 @@ if (!db_db_query($sql, $comms, $error)) {
 			<select class="form-control" name="ph" onChange="this.form.submit()">
 			 <option value="">(all numbers)</option>
 <?php
-	foreach ($HOTLINES as $hotline_number => $hotline) {
-?>
-			 <option value="<?php echo $hotline_number ?>" 
-				<?php if ($ph == $hotline_number) { echo "selected"; } ?>><?php echo $hotline_number ?> (<?php echo $hotline['name'] ?>)</option>
+    foreach ($HOTLINES as $hotline_number => $hotline) {
+        ?>
+			 <option value="<?php echo $hotline_number ?>"
+				<?php if ($ph == $hotline_number) {
+            echo "selected";
+        } ?>><?php echo $hotline_number ?> (<?php echo $hotline['name'] ?>)</option>
 <?php
-	}
-	if (isset($BROADCAST_CALLER_ID) && $BROADCAST_CALLER_ID) {
-?>
-			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
-				<?php if ($ph == $BROADCAST_CALLER_ID) { echo "selected"; } ?>><?php echo $BROADCAST_CALLER_ID ?> (Broadcast)</option>
+    }
+    if (isset($BROADCAST_CALLER_ID) && $BROADCAST_CALLER_ID) {
+        ?>
+			 <option value="<?php echo $BROADCAST_CALLER_ID ?>"
+				<?php if ($ph == $BROADCAST_CALLER_ID) {
+            echo "selected";
+        } ?>><?php echo $BROADCAST_CALLER_ID ?> (Broadcast)</option>
 <?php
-	}
+    }
 ?>
 			</select>
  		   </div>
@@ -77,13 +91,13 @@ include 'communications.php';
 <?php
 // show the previous button if we are not at the beginning
 if ($start > 0) {
-?>
+    ?>
  <a class="btn btn-success" href="log.php?s=<?php echo $start - $page ?>" role="button">&lt;&lt; Prev</a>
 <?php
 }
 // show the next button if there are more to show
 if (count($comms) >= $page) {
-?>
+    ?>
  <a class="btn btn-success" href="log.php?s=<?php echo $start + $page ?>" role="button">Next &gt;&gt;</a>
 <?php
 }
