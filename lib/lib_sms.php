@@ -54,8 +54,8 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
         "((day='all' OR day='{$day}' OR ".
         ($weekend ? "day='weekends'" : "day='weekdays'") .
         ") AND ".
-        "((earliest < CURTIME() AND latest > CURTIME()) OR ".
-        " (earliest > latest AND (earliest < CURTIME() OR latest > CURTIME()))))";
+        "((earliest < CURTIME() AND ADDTIME(latest, '0:01:00') > CURTIME()) OR ".
+        " (earliest > latest AND (earliest < CURTIME() OR ADDTIME(latest, '0:01:00') > CURTIME()))))";
     if (!db_db_query($sql, $contacts, $error)) {
         return false;
     }
