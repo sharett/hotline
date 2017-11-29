@@ -17,12 +17,19 @@ include 'header.php';
 // URL parameters
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
-$tags = isset($_REQUEST['tags']) ? $_REQUEST['tags'] : array();
+$tag_boxes = isset($_REQUEST['tag_boxes']) ? $_REQUEST['tag_boxes'] : array();
+$tag_names = isset($_REQUEST['tag_names']) ? $_REQUEST['tag_names'] : array();
 $request_response = isset($_REQUEST['response']) ? trim($_REQUEST['response']) : '';
 $confirmed = isset($_REQUEST['confirm']) ? $_REQUEST['confirm'] : '';
 $communications_id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
-print_r($tags);
+// Create an array of selected tags from the $tag_names and $tag_boxes parameters
+$tags_selected = array();
+foreach ($tag_boxes as $tag_number => $tag_box) {
+	if ($tag_box == 'on') {
+		$tags_selected[] = $tag_names[$tag_number];
+	}
+}
 
 // Authorized user?
 $authorized = empty($BROADCAST_AUTHORIZED_USERS) || 
@@ -38,7 +45,7 @@ if (!$authorized) {
 if ($action == 'broadcast' && $authorized) {
 	if ($confirmed == 'on') {
 		// confirmed, send the broadcast
-		if (sendBroadcastText($text, $request_response, $error, $success)) {
+		if (sendBroadcastText($text, $request_response, $tags_selected, $error, $success)) {
 			$text = '';
 			$request_response = '';
 		}
@@ -68,10 +75,6 @@ if ($action == 'broadcast_close' && $authorized) {
 	}
 }
 
-// get the count of the active numbers
-$sql = "SELECT COUNT(*) FROM broadcast WHERE status='active'";
-db_db_getone($sql, $broadcast_count, $error);
-
 // load the tags
 loadBroadcastTags($broadcast_tags, $error);
 
@@ -93,6 +96,8 @@ if (!empty($success)) {
 ?>
 
 	      <script type="text/javascript">
+			var broadcast_count = 0;  
+			
 			// calculate the number of characters and cost to send this text
 		    function showTextLength() {
 				var count = $('#text_entry').val().trim().length;
@@ -101,13 +106,24 @@ if (!empty($success)) {
 					count += response_count + 1;
 				}
 				var sms_count = Math.floor(count / 160) + 1;
-				var cost = sms_count * <?php echo $broadcast_count ?> * <?php echo $TWILIO_COST_PER_TEXT ?>;
+				var cost = sms_count * broadcast_count * <?php echo $TWILIO_COST_PER_TEXT ?>;
 				
 				if (count == 0) {
-					$('#text_entry_length').text('(0 characters)');
+					$('#text_entry_length').text('(to ' + broadcast_count + ' numbers, 0 characters)');
 				} else {
-					$('#text_entry_length').text('(' + count + ' characters, $' + cost.toFixed(2) + ')');
+					$('#text_entry_length').text('(to ' + broadcast_count + ' numbers, ' + count + ' characters, $' + cost.toFixed(2) + ')');
 				}
+			}
+			
+			// load the count of numbers to send to, which changes depending on which tags are checked
+			function updateBroadcastCount() {
+				$.post("broadcast_count.php", $( "#broadcast" ).serialize(), 
+					function(data) {
+						// the count is returned
+						broadcast_count = parseInt(data);
+						showTextLength();
+					} 
+				);
 			}
 	      </script>
 	      
@@ -120,14 +136,14 @@ if (!empty($success)) {
 		  </ul>
 		  <br />
 		  
-          <form id="text-controls" action="broadcast.php" method="POST">
+          <form id="broadcast" action="broadcast.php" method="POST">
 		   <input type="hidden" name="action" value="broadcast">
 		   <div class="form-group">
 			<label for="text_entry">Send a new broadcast text message:</label>
 			<input type="text" class="form-control" name="text" maxLength="1600" 
 			       id="text_entry" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
 			       placeholder="Text message" value="<?php echo $text ?>">
-			<p class="help-block" id="text_entry_length"></p>
+			<p class="help-block" id="text_entry_length">&nbsp;</p>
  		   </div>
 
 		   <div class="form-group">
@@ -137,8 +153,9 @@ if (!empty($success)) {
 		foreach ($broadcast_tags as $tag => $tag_data) {
 ?>
  		     <label class="checkbox-inline">
-			   <input type="checkbox" name="tags[<?php echo $tag_data['id'] ?>]" 
-			          id="checkbox_tag_<?php echo $tag_data['id'] ?>"<?php if ($tags[$tag_data['id']] == 'on') { echo " checked"; } ?>>
+			   <input type="hidden" class="tags" name="tag_names[<?php echo $tag_data['id'] ?>]" value="<?php echo addslashes($tag) ?>">
+			   <input type="checkbox" class="tags" name="tag_boxes[<?php echo $tag_data['id'] ?>]" onClick="updateBroadcastCount();" 
+			          id="checkbox_tag_<?php echo $tag_data['id'] ?>"<?php if ($tag_boxes[$tag_data['id']] == 'on') { echo " checked"; } ?>>
 			     <span class="label label-primary"><?php echo $tag ?></span> 
 			     <span class="badge"><?php echo $tag_data['count'] ?></span>
 			 </label>
@@ -148,7 +165,6 @@ if (!empty($success)) {
 		echo "(no tags)";
 	}
 ?> 		   
-		     <p class="help-block">If no tags are checked, everyone (<?php echo $broadcast_count ?> numbers) will receive the broadcast.</p>
 		   </div>
 
  		   <div class="form-group">
@@ -216,6 +232,13 @@ if ($broadcast_response) {
 // display the footer
 include 'footer.php';
 
+?>
+<script type="text/javascript">
+// load the broadcast count - placed at the end after jquery is loaded
+updateBroadcastCount();
+</script>
+<?php
+
 /**
 * Send a broadcast text.
 *
@@ -225,6 +248,8 @@ include 'footer.php';
 *   The text to send.
 * @param string $request_response
 *   The additional text requesting a response if they want to participate further.
+* @param array $tags
+*   The tags to limit the broadcast to, if any are set.
 * @param string &$error
 *   An error if one occurred.
 * @param string &$message
@@ -234,7 +259,7 @@ include 'footer.php';
 *   True if sent.
 */
 
-function sendBroadcastText($text, $request_response, &$error, &$message)
+function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 {
 	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
 	
@@ -268,8 +293,18 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 		return false;
 	}
 	
-	// load the broadcast numbers
-	$sql = "SELECT phone FROM broadcast WHERE status='active'";
+	// create the SQL for the tags
+	$sql_tags = '';
+	foreach ($tags as $tag) {
+		$sql_tags[] = "tag='".addslashes($tag)."'";
+	}
+	
+	// load the broadcast numbers, limited by tags if any tags are set
+	$sql = "SELECT DISTINCT phone FROM broadcast ".
+		(count($tags)
+		    ? ("LEFT JOIN broadcast_tags ON broadcast.id = broadcast_tags.broadcast_id ".
+			   "WHERE status='active' AND (".implode(' OR ', $sql_tags).")")
+			: "WHERE status='active'");
 	if (!db_db_getcol($sql, $numbers, $error)) {
 		return false;
 	}
@@ -289,7 +324,7 @@ function sendBroadcastText($text, $request_response, &$error, &$message)
 	$data = array(
 		'From' => $BROADCAST_CALLER_ID,
 		'To' => ($request_response ? 'BROADCAST_RESPONSE' : 'BROADCAST'),
-		'Body' => $text,
+		'Body' => $text . (count($tags) ? (" (LIMITED TO TAGS: " . implode(', ', $tags) . ")") : ''),
 		'MessageSid' => 'text'
 	);
 	sms_storeCallData($data, $error);

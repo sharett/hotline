@@ -92,13 +92,13 @@ include 'communications.php';
 // show the previous button if we are not at the beginning
 if ($start > 0) {
     ?>
- <a class="btn btn-success" href="log.php?s=<?php echo $start - $page ?>" role="button">&lt;&lt; Prev</a>
+ <a class="btn btn-success" href="log.php?s=<?php echo $start - $page ?>&ph=<?php echo urlencode($ph) ?>" role="button">&lt;&lt; Prev</a>
 <?php
 }
 // show the next button if there are more to show
 if (count($comms) >= $page) {
     ?>
- <a class="btn btn-success" href="log.php?s=<?php echo $start + $page ?>" role="button">Next &gt;&gt;</a>
+ <a class="btn btn-success" href="log.php?s=<?php echo $start + $page ?>&ph=<?php echo urlencode($ph) ?>" role="button">Next &gt;&gt;</a>
 <?php
 }
 ?>
