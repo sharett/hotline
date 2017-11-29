@@ -11,13 +11,13 @@ require_once 'config.php';
 db_databaseConnect();
 
 // URL parameters
-$tag_boxes = isset($_REQUEST['tag_boxes']) ? $_REQUEST['tag_boxes'] : array();
+$include_tags = isset($_REQUEST['include_tags']) ? $_REQUEST['include_tags'] : array();
 $tag_names = isset($_REQUEST['tag_names']) ? $_REQUEST['tag_names'] : array();
 
-// Create an array of selected tags from the $tag_names and $tag_boxes parameters
+// Create an array of selected tags from the $tag_names and $include_tags parameters
 $tags_selected = array();
-foreach ($tag_boxes as $tag_number => $tag_box) {
-	if ($tag_box == 'on') {
+foreach ($include_tags as $tag_number => $include_tag) {
+	if ($include_tag == 'on') {
 		$tags_selected[] = $tag_names[$tag_number];
 	}
 }

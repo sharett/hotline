@@ -156,9 +156,8 @@ if (!empty($success)) {
 		foreach ($broadcast_tags as $tag => $tag_data) {
 ?>
  		     <label class="checkbox-inline">
-			   <input type="hidden" class="tags" name="tag_names[<?php echo $tag_data['id'] ?>]" value="<?php echo addslashes($tag) ?>">
-			   <input type="checkbox" class="tags" name="tag_boxes[<?php echo $tag_data['id'] ?>]" onClick="updateBroadcastCount();" 
-			          id="checkbox_tag_<?php echo $tag_data['id'] ?>"<?php if ($include_tags[$tag_data['id']] == 'on') { echo " checked"; } ?>>
+			   <input type="hidden" name="tag_names[<?php echo $tag_data['id'] ?>]" value="<?php echo addslashes($tag) ?>">
+			   <input type="checkbox" name="include_tags[<?php echo $tag_data['id'] ?>]" onClick="updateBroadcastCount();" <?php if ($include_tags[$tag_data['id']] == 'on') { echo " checked"; } ?>>
 			     <span class="label label-primary"><?php echo $tag ?></span> 
 			     <span class="badge"><?php echo $tag_data['count'] ?></span>
 			 </label>
