@@ -22,6 +22,11 @@ $send_welcome = ($_POST['send_welcome'] == 'on');
 $id = $_REQUEST['id'];
 $tag = $_REQUEST['tag'];
 
+// initialize variables
+$numbers_active = array();
+$numbers_disabled = array();
+$numbers_by_tag = array();
+
 // *** ACTIONS ***
 
 // import?

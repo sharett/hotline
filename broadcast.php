@@ -17,16 +17,19 @@ include 'header.php';
 // URL parameters
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $text = isset($_REQUEST['text']) ? trim($_REQUEST['text']) : '';
-$tag_boxes = isset($_REQUEST['tag_boxes']) ? $_REQUEST['tag_boxes'] : array();
+$include_tags = isset($_REQUEST['include_tags']) ? $_REQUEST['include_tags'] : array();
 $tag_names = isset($_REQUEST['tag_names']) ? $_REQUEST['tag_names'] : array();
 $request_response = isset($_REQUEST['response']) ? trim($_REQUEST['response']) : '';
 $confirmed = isset($_REQUEST['confirm']) ? $_REQUEST['confirm'] : '';
 $communications_id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
-// Create an array of selected tags from the $tag_names and $tag_boxes parameters
+// initialize variables
+$broadcast_tags = array();
+
+// Create an array of selected tags from the $tag_names and $include_tags parameters
 $tags_selected = array();
-foreach ($tag_boxes as $tag_number => $tag_box) {
-	if ($tag_box == 'on') {
+foreach ($include_tags as $tag_number => $include_tag) {
+	if ($include_tag == 'on') {
 		$tags_selected[] = $tag_names[$tag_number];
 	}
 }
@@ -155,7 +158,7 @@ if (!empty($success)) {
  		     <label class="checkbox-inline">
 			   <input type="hidden" class="tags" name="tag_names[<?php echo $tag_data['id'] ?>]" value="<?php echo addslashes($tag) ?>">
 			   <input type="checkbox" class="tags" name="tag_boxes[<?php echo $tag_data['id'] ?>]" onClick="updateBroadcastCount();" 
-			          id="checkbox_tag_<?php echo $tag_data['id'] ?>"<?php if ($tag_boxes[$tag_data['id']] == 'on') { echo " checked"; } ?>>
+			          id="checkbox_tag_<?php echo $tag_data['id'] ?>"<?php if ($include_tags[$tag_data['id']] == 'on') { echo " checked"; } ?>>
 			     <span class="label label-primary"><?php echo $tag ?></span> 
 			     <span class="badge"><?php echo $tag_data['count'] ?></span>
 			 </label>
@@ -459,6 +462,7 @@ function loadBroadcastTags(&$broadcast_tags, &$error)
 	}
 	
 	$tag_id = 0;
+	$broadcast_tags = array();
 	foreach ($tags as $tag) {
 		$sql = "SELECT COUNT(*) FROM broadcast_tags ".
 			"LEFT JOIN broadcast ON broadcast.id = broadcast_tags.broadcast_id ".
