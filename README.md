@@ -7,6 +7,7 @@ Hotline is a phone bank hotline and mass texting tool that uses Twilio.
 Hotlines:
 * Direct incoming calls and texts to hotline staff based on day of week, time of day and language ability.
 * Send texts and make calls from the browser.
+* Support for multiple hotline numbers.
 
 Broadcast:
 * Send mass texts, import and remove lists of numbers.  Process unsubscribe requests.
@@ -32,7 +33,7 @@ It is not production ready and is very much in progress.
 
 * Password protect access to the directory you installed it to.  HTTP basic security should work.
 
-* Install a database editing utility such as PhpMyAdmin and place it in the "sanctdb" directory under the main directory.
+* Optionally, install a database editing utility such as PhpMyAdmin and place it in a directory under the main directory.
 
 * Create a database and credentials to access it (using this utility or directly via the command line using mysql).
 
@@ -42,7 +43,7 @@ It is not production ready and is very much in progress.
   * The $TWILIO_ACCOUNT_SID and $TWILIO_AUTH_TOKEN can be found from the [Twilio Account Dashboard] (https://www.twilio.com/user/account).
   * Put the database credentials in the $HOTLINE_DB_ settings.
   * For mass texting, set the $BROADCAST_ settings including the phone number to use in the '+1NXXNXXXXXX' format ($BROADCAST_CALLER_ID).
-  * For hotlines, set the $HOTLINE_ and $HOTLINES settings including the phone number to use in the '+1NXXNXXXXXX' format.
+  * For hotlines, set the $HOTLINE_ and $HOTLINES settings including the phone numbers to use in the '+1NXXNXXXXXX' format.
 
 * In your Twilio account, configure each number to make a webhook request to the application.  Use the HTTP basic security you set above (replace username and password and the web address below as appropriate).  For voice, use:
    
@@ -80,7 +81,7 @@ Voice calls:
   * “($HOTLINES['name']) hotline call.  Press 1 to accept.”
   * If they press 1: “Connecting you to the caller.”
   * Otherwise, “Goodbye.” and hangs up.
-* If any hotline staff accept the call, they are connected to the caller.
+* If any hotline staff accept the call, they are connected to the caller.  Staff with "answer alerts" enabled will be alerted via a text message.
 * If no one answers in time, the caller hears: “No one is available to answer.  Please leave a message.”  Maximum length of message, 5 minutes.
 * If a voicemail is left, all on-call staff are alerted via a text message.
 
