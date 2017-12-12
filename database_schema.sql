@@ -46,6 +46,18 @@ CREATE TABLE `broadcast_responses` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `broadcast_tags`
+--
+
+CREATE TABLE `broadcast_tags` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `broadcast_id` int(11) UNSIGNED NOT NULL,
+  `tag` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Tags for particular broadcast numbers';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `call_times`
 --
 
@@ -157,6 +169,14 @@ ALTER TABLE `broadcast_responses`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `broadcast_tags`
+--
+ALTER TABLE `broadcast_tags`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `broadcast_id` (`broadcast_id`,`tag`),
+  ADD KEY `broadcast_id_2` (`broadcast_id`,`tag`);
+ 
+--
 -- Indexes for table `call_times`
 --
 ALTER TABLE `call_times`
@@ -206,6 +226,11 @@ ALTER TABLE `broadcast`
 -- AUTO_INCREMENT for table `broadcast_responses`
 --
 ALTER TABLE `broadcast_responses`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `broadcast_tags`
+--
+ALTER TABLE `broadcast_tags`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `call_times`
