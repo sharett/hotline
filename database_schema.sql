@@ -63,6 +63,7 @@ CREATE TABLE `broadcast_tags` (
 
 CREATE TABLE `call_times` (
   `id` int(11) UNSIGNED NOT NULL,
+  `entry_id` int(11) UNSIGNED NOT NULL DEFAULT '0',
   `contact_id` int(11) UNSIGNED NOT NULL DEFAULT '0',
   `day` enum('all','weekdays','weekends','Sun','Mon','Tue','Wed','Thu','Fri','Sat') NOT NULL,
   `earliest` time NOT NULL,
@@ -175,12 +176,13 @@ ALTER TABLE `broadcast_tags`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `broadcast_id` (`broadcast_id`,`tag`),
   ADD KEY `broadcast_id_2` (`broadcast_id`,`tag`);
- 
+
 --
 -- Indexes for table `call_times`
 --
 ALTER TABLE `call_times`
   ADD PRIMARY KEY (`id`),
+  ADD KEY `entry_id` (`entry_id`),
   ADD KEY `contact_id` (`contact_id`),
   ADD KEY `language_id` (`language_id`);
 

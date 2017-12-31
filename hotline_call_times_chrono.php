@@ -215,11 +215,11 @@ if ($TEST_MODE) {
                     title="Add a call time for this staff member">
                   <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
               <a href="hotline_staff.php?display_type=chronological&action=editcalltimemodal&id=<?php
-                    echo $call_time['id'] ?>"
+                    echo $call_time['entry_id'] ?>"
                     title="Edit this call time">
                   <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a>
               <a href="hotline_staff.php?display_type=chronological&action=removecalltime&id=<?php
-                    echo $call_time['id'] ?>"
+                    echo $call_time['entry_id'] ?>"
                   onClick="return confirm('<?php echo $confirmation_message; ?>');"
                   title="Remove this call time">
                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
@@ -253,6 +253,7 @@ function getResultsUsingHybridQuery()
         $query =
             "SELECT DISTINCT ".
                 "call_times.id, ".
+                "call_times.entry_id, ".
                 "call_times.day AS original_day, ".
                 "call_times.day + 0 AS original_day_ordinal, ".
                 "call_times.earliest AS earliest_time, ".
@@ -282,6 +283,7 @@ function getResultsUsingHybridQuery()
     $query =
         "SELECT DISTINCT ".
             "call_times.id, ".
+            "call_times.entry_id, ".
             "call_times.day AS original_day, ".
             "call_times.day + 0 AS original_day_ordinal, ".
             "call_times.day AS day_of_week, ".
@@ -332,8 +334,8 @@ function getResultsUsingHybridQuery()
         foreach ($multiDayResults[$grouping] as $multiDayResult) {
             foreach ($days as $day => $ordinal) {
 
-                // Copy he multi-day result, then insert into it
-                // valuesfor the 'day_of_week' and 'day_ordinal'
+                // Copy the multi-day result, then insert into it
+                // values for the 'day_of_week' and 'day_ordinal'
                 // indices. Then add it to the list of single-day
                 // results.
                 $result = $multiDayResult;
@@ -376,6 +378,7 @@ function getResultsUsingPureSqlQuery()
         $query .=
             "(SELECT DISTINCT ".
                 "call_times.id, ".
+                "call_times.entry_id, ".
                 "call_times.day AS original_day, ".
                 "call_times.day + 0 AS original_day_ordinal, ".
                 "'". $day. "' AS day_of_week, ".

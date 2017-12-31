@@ -104,7 +104,7 @@ function db_db_command($sql, &$error)
     global $db;
 
     if (!$res = $db->query($sql)) {
-        $error = $res->error . " (SQL: {$sql})";
+        $error = $db->error . " (SQL: {$sql})";
         return false;
     }
 
@@ -147,7 +147,7 @@ function db_db_query($sql, &$results, &$error)
     global $db;
 
     if (!$res = $db->query($sql)) {
-        $error = $res->error . " (SQL: {$sql})";
+        $error = $db->error . " (SQL: {$sql})";
         return false;
     }
 
@@ -208,7 +208,7 @@ function db_db_getcol($sql, &$results, &$error)
     global $db;
 
     if (!$res = $db->query($sql)) {
-        $error = $res->error . " (SQL: {$sql})";
+        $error = $db->error . " (SQL: {$sql})";
         return false;
     }
 
@@ -241,7 +241,7 @@ function db_db_getone($sql, &$results, &$error)
     global $db;
 
     if (!$res = $db->query($sql)) {
-        $error = $res->error . " (SQL: {$sql})";
+        $error = $db->error . " (SQL: {$sql})";
         return false;
     }
 
@@ -273,7 +273,7 @@ function db_db_getassoc($sql, &$results, &$error)
     global $db;
 
     if (!$res = $db->query($sql)) {
-        $error = $res->error . " (SQL: {$sql})";
+        $error = $db->error . " (SQL: {$sql})";
         return false;
     }
 

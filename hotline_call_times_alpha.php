@@ -167,11 +167,11 @@ foreach ($contacts as $contact) {
                 title="Add a call time for this staff member">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=editcalltimemodal&id=<?php
-                echo $call_time['id'] ?>"
+                echo $call_time['entry_id'] ?>"
                 title="Edit this call time">
             <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=removecalltime&id=<?php
-                echo $call_time['id'] ?>"
+                echo $call_time['entry_id'] ?>"
                 onClick="return confirm('Are you sure you want to remove this call time?');"
                 title="Remove this call time">
             <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
