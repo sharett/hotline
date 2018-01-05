@@ -263,11 +263,12 @@ updateBroadcastCount();
 
 function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
+	global $BROADCAST_CALLER_IDS, $BROADCAST_PROGRESS_MARK_EVERY, $BROADCAST_TWILIO_NOTIFY_SERVICE;
 	
 	$error = '';
 	$message = '';
-
+	$tags_description = '';
+	
 	// is there a response request?
 	if (trim($request_response)) {
 		// trim it, and put a space between the text and the response request
@@ -283,13 +284,18 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		return false;
 	}
 	
+	// limited to specific tags?
+	if (count($tags)) {
+		$tags_description = " (LIMITED TO TAGS: " . implode(', ', $tags) . ")";
+	}
+	
 	// confirm that the text is not identical to the previous broadcast text sent
 	$sql = "SELECT * FROM communications WHERE phone_to LIKE 'BROADCAST%' ".
 		"ORDER BY communication_time DESC LIMIT 1";
 	if (!db_db_getrow($sql, $last_broadcast, $error)) {
 		return false;
 	}
-	if ($last_broadcast['body'] == $text) {
+	if ($last_broadcast['body'] == ($text . $tags_description)) {
 		// it is identical!
 		$error = "This text is identical to the last one sent - aborting!";
 		return false;
@@ -315,18 +321,29 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		$error = "No numbers to send to.";
 		return false;
 	}
-	
-	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
-				  $BROADCAST_PROGRESS_MARK_EVERY)) {
-		return false;
+
+	// use the first caller id as the default
+	$broadcast_from = reset($BROADCAST_CALLER_IDS);
+
+	// send via Twilio notify?
+	if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+		// yes
+		if (!sms_sendViaNotify($numbers, $text, $error)) {
+			return false;
+		}
+	} else {
+		// no, send the texts one by one using the first broadcast caller_id
+		if (!sms_send($numbers, $text, $error, $broadcast_from, 
+					  $BROADCAST_PROGRESS_MARK_EVERY)) {
+			return false;
+		}
 	}
 	
 	// store the text
 	$data = array(
-		'From' => $BROADCAST_CALLER_ID,
+		'From' => $broadcast_from,
 		'To' => ($request_response ? 'BROADCAST_RESPONSE' : 'BROADCAST'),
-		'Body' => $text . (count($tags) ? (" (LIMITED TO TAGS: " . implode(', ', $tags) . ")") : ''),
+		'Body' => $text . $tags_description,
 		'MessageSid' => 'text'
 	);
 	sms_storeCallData($data, $error);

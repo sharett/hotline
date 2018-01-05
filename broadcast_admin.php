@@ -191,7 +191,8 @@ include 'footer.php';
 
 function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_WELCOME, $BROADCAST_PROGRESS_MARK_EVERY; 
+	global $BROADCAST_CALLER_IDS, $BROADCAST_WELCOME, $BROADCAST_PROGRESS_MARK_EVERY,
+	       $BROADCAST_TWILIO_NOTIFY_SERVICE; 
 	
 	$error = '';
 	$message = '';
@@ -259,9 +260,20 @@ function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true
 	
 	// send the welcome messages if set
 	if ($send_welcome && $BROADCAST_WELCOME) {
-		sms_send($success_numbers, $BROADCAST_WELCOME, $send_error, 
-				 $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY);
-		$error .= $send_error;
+		// use the first caller id as the default
+		$broadcast_from = reset($BROADCAST_CALLER_IDS);
+
+		// use the Twilio Notify service?
+		if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+			// yes
+			sms_sendViaNotify($success_numbers, $BROADCAST_WELCOME, $send_error);
+			$error .= $send_error;
+		} else {
+			// no, send the texts one by one
+			sms_send($success_numbers, $BROADCAST_WELCOME, $send_error, 
+					 $broadcast_from, $BROADCAST_PROGRESS_MARK_EVERY);
+			$error .= $send_error;
+		}
 	}
 	
 	// report on the status of the import

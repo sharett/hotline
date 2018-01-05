@@ -49,7 +49,7 @@ if (sms_handleAdminText($from, $to, $body, $message, $error)) {
 	// no, process normally
 
 	// is this a broadcast text?
-	if ($to == $BROADCAST_CALLER_ID) {
+	if (in_array($to, $BROADCAST_CALLER_IDS)) {
 		processBroadcastText($from, $body, $message, $error);
 	}
 	

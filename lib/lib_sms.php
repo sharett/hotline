@@ -148,6 +148,57 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 }
 
 /**
+* Send a text message to a list of numbers via Twilio's Notify service
+*
+* ...
+* 
+* @param array $numbers
+*   Array of phone numbers to send the text to.
+* @param string $text
+*   The body of the text message.
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True unless no messages were sent successfully.
+*/
+
+function sms_sendViaNotify($numbers, $text, &$error)
+{
+	global $TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN, $BROADCAST_TWILIO_NOTIFY_SERVICE;
+	
+	if (!count($numbers)) {
+		// there are no messages to send
+		return true;
+	}
+
+	// create an array of bindings
+	$to_bindings = array();
+	foreach ($numbers as $number) {
+		$to_bindings[] = 
+			'{"binding_type":"sms", "address":"' . $number . '"}';
+	}
+
+	// create a Twilio client
+	$client = new Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
+
+	// send the messages
+    try {
+		$notification = $client
+			->notify->services($BROADCAST_TWILIO_NOTIFY_SERVICE)
+			->notifications->create([
+				"toBinding" => $to_bindings,
+				"body" => $text
+			]);
+	} catch (Exception $e) {
+		$error = $e->getMessage();
+		return false;
+	}
+        
+	return true;
+}
+
+/**
 * Place calls to a list of numbers
 *
 * ...
