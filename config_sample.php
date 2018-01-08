@@ -36,7 +36,10 @@ $TWILIO_TWIML_APP_SID = '';
 // **** BROADCAST ****
 
 // Broadcast number
-$BROADCAST_CALLER_ID = '+1NXXNXXXXXX';
+$BROADCAST_CALLER_IDS = array('+1NXXNXXXXXX');
+
+// Optional Twilio Notify Service SID
+$BROADCAST_TWILIO_NOTIFY_SERVICE = '';
 
 // Broadcast prompts
 $BROADCAST_WELCOME = "Welcome to the ". $HOTLINE_NAME . " alert list. ".

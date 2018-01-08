@@ -49,24 +49,42 @@ db_databaseDisconnect();
 
 function exportToCsv($export, &$error)
 {
+	global $BROADCAST_CALLER_IDS;
+	
 	$error = '';
 	
 	// determine what to include
 	$earliest = $export['earliest'] ? strtotime($export['earliest']) : '';
 	$latest = $export['latest'] ? strtotime($export['latest']) : '';
 	$phone = trim($export['phone']);
-	if ($phone) {
+	if ($phone && $phone != 'all_broadcast') {
 		if (!sms_normalizePhoneNumber($phone, $error)) {
 			return false;
 		}
 	}
 	$type = trim($export['type']);
 
+	// build the query to specify which numbers to export
+	$where_sql_array = array();
+	if (isset($BROADCAST_CALLER_IDS) && $phone == 'all_broadcast') {
+		// show logs for all broadcast numbers
+		foreach ($BROADCAST_CALLER_IDS as $number) {
+			$where_sql_array[] =
+				"phone_from = '".addslashes($number)."' OR ".
+				"phone_to = '".addslashes($number)."'";
+		}
+	} else {
+		// show logs just for a single number
+		$where_sql_array[] =
+			"phone_from = '".addslashes($phone)."' OR ".
+			"phone_to = '".addslashes($phone)."'";
+	}
+
 	// load the matching records
 	$sql = "SELECT communication_time,phone_from,phone_to,body,status,responded FROM communications WHERE ".
 		($earliest ? ("communication_time > '".addslashes(date("Y-m-d H:i:s", $earliest))."' AND ") : '') .
 		($latest ? ("communication_time < '".addslashes(date("Y-m-d H:i:s", $latest))."' AND ") : '') .
-		($phone ? ("(phone_from = '".addslashes($phone)."' OR phone_to = '".addslashes($phone)."') AND ") : '') .
+		($phone ? ("(" . implode(" OR ", $where_sql_array) . ") AND ") : '') .
 		($type ? ("status = '".addslashes($type)."' AND ") : '') .
 		" 1 ".
 		"ORDER BY communication_time DESC";

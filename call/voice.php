@@ -18,7 +18,7 @@ if (isset($_REQUEST['To']) && strlen($_REQUEST['To']) > 0) {
     $from = htmlspecialchars($_REQUEST['From']);
     
     // ensure that the "from" number is hotline or broadcast.  Default to first hotline.
-	if ($from != $BROADCAST_CALLER_ID && !array_key_exists($from, $HOTLINES)) {
+	if (!in_array($from, $BROADCAST_CALLER_IDS) && !array_key_exists($from, $HOTLINES)) {
 		sms_getFirstHotline($from, $hotline, $error);
 	}
     

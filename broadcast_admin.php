@@ -66,7 +66,7 @@ if ($success) {
 			<li role="presentation"><a href="broadcast.php">Send</a></li>
 			<li role="presentation"<?php if (substr($action, 0, 4) != 'list') echo ' class="active"'?>><a href="broadcast_admin.php">Import &amp; Remove</a></li>
 			<li role="presentation"<?php if (substr($action, 0, 4) == 'list') echo ' class="active"'?>><a href="broadcast_admin.php?action=list">List</a></li>
-			<li role="presentation"><a href="log.php?ph=<?php echo urlencode($BROADCAST_CALLER_ID) ?>">Log</a></li>
+			<li role="presentation"><a href="log.php?ph=all_broadcast">Log</a></li>
 		  </ul>
 <?php
 // display the import/remove information unless a list is requested

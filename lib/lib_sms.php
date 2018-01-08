@@ -561,7 +561,7 @@ function sms_handleAdminText($from, $to, $body, &$response, &$error)
 
 function sms_updateNumber($enable, $from, $to, &$response, &$error)
 {
-	global $BROADCAST_CALLER_ID, $HOTLINES, $BROADCAST_WELCOME, $BROADCAST_GOODBYE;
+	global $BROADCAST_CALLER_IDS, $HOTLINES, $BROADCAST_WELCOME, $BROADCAST_GOODBYE;
 	
 	$enabled = $enable ? 'y' : 'n';
 	
@@ -586,7 +586,7 @@ function sms_updateNumber($enable, $from, $to, &$response, &$error)
 	}
 	
 	// disable/enable broadcast texts
-	if ($to == $BROADCAST_CALLER_ID) {
+	if (in_array($to, $BROADCAST_CALLER_IDS)) {
 		// is this phone number in the database?
 		$sql = "SELECT COUNT(*) FROM broadcast WHERE phone = '".addslashes($from)."'";
 		if (!db_db_getone($sql, $broadcast_count, $error)) {
@@ -744,7 +744,7 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 
 function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 {
-	global $BROADCAST_CALLER_ID;
+	global $BROADCAST_CALLER_IDS, $BROADCAST_TWILIO_NOTIFY_SERVICE;
 	
 	// look up the broadcast id for this number
 	$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($from)."' AND status='active'";
@@ -805,10 +805,22 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 			$update_message .= $message_time . ": " . $message['body'] . ' ';
 		}
 		
-		// send them the messages
 		$numbers = array($from);
-		if (!sms_send($numbers, $update_message, $error, $BROADCAST_CALLER_ID)) {
-			return false;
+				
+		// use the first caller id as the default
+		$broadcast_from = reset($BROADCAST_CALLER_IDS);
+
+		// send via Twilio notify?
+		if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+			// yes
+			if (!sms_sendViaNotify($numbers, $update_message, $error)) {
+				return false;
+			}
+		} else {
+			// no, send the texts one by one using the first broadcast caller_id
+			if (!sms_send($numbers, $update_message, $error, $broadcast_from)) {
+				return false;
+			}
 		}
 	}
 	
@@ -831,11 +843,11 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 
 function sms_closeBroadcastResponse(&$error)
 {
-	global $BROADCAST_CALLER_ID;
+	global $BROADCAST_CALLER_IDS;
 	
 	// store a BROADCAST_RESPONSE_CLOSED text
 	$data = array(
-		'From' => $BROADCAST_CALLER_ID,
+		'From' => reset($BROADCAST_CALLER_IDS),
 		'To' => 'BROADCAST_RESPONSE_CLOSED',
 		'Body' => '',
 		'MessageSid' => 'text'

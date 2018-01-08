@@ -135,7 +135,7 @@ if (!empty($success)) {
 			<li role="presentation" class="active"><a href="broadcast.php">Send</a></li>
 			<li role="presentation"><a href="broadcast_admin.php">Import &amp; Remove</a></li>
 			<li role="presentation"><a href="broadcast_admin.php?action=list">List</a></li>
-			<li role="presentation"><a href="log.php?ph=<?php echo urlencode($BROADCAST_CALLER_ID) ?>">Log</a></li>
+			<li role="presentation"><a href="log.php?ph=all_broadcast">Log</a></li>
 		  </ul>
 		  <br />
 		  
@@ -307,7 +307,7 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		$sql_tags[] = "tag='".addslashes($tag)."'";
 	}
 	
-	// load the broadcast numbers, limited by tags if any tags are set
+	// load the numbers to broadcast to, limited by tags if any tags are set
 	$sql = "SELECT DISTINCT phone FROM broadcast ".
 		(count($tags)
 		    ? ("LEFT JOIN broadcast_tags ON broadcast.id = broadcast_tags.broadcast_id ".
@@ -373,7 +373,7 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 
 function sendBroadcastResponseText($text, $communications_id, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
+	global $BROADCAST_CALLER_IDS, $BROADCAST_TWILIO_NOTIFY_SERVICE, $BROADCAST_PROGRESS_MARK_EVERY;
 	
 	$error = '';
 	$message = '';
@@ -406,15 +406,26 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 		return false;
 	}
 	
-	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
-	              $BROADCAST_PROGRESS_MARK_EVERY)) {
-		return false;
+	// use the first caller id as the default
+	$broadcast_from = reset($BROADCAST_CALLER_IDS);
+
+	// send via Twilio notify?
+	if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+		// yes
+		if (!sms_sendViaNotify($numbers, $text, $error)) {
+			return false;
+		}
+	} else {
+		// no, send the texts one by one using the first broadcast caller_id
+		if (!sms_send($numbers, $text, $error, $broadcast_from, 
+					  $BROADCAST_PROGRESS_MARK_EVERY)) {
+			return false;
+		}
 	}
 	
 	// store the text
 	$data = array(
-		'From' => $BROADCAST_CALLER_ID,
+		'From' => $broadcast_from,
 		'To' => 'BROADCAST_RESPONSE_UPDATE',
 		'Body' => $text,
 		'MessageSid' => 'text'
