@@ -24,18 +24,25 @@ if ($modal_action == "Add") {
         'day' => "all",
         'earliest' => "12:00 am",
         'latest' => "11:59 pm",
-        'language_id' => null,
+        'language_ids' => null,
         'receive_texts' => "y",
         'receive_calls' => "y",
         'receive_call_answered_alerts' => "n"
     );
 } else {
 
-    // Get the call time array.
-    $sql = "SELECT * FROM call_times WHERE id='".addslashes($id)."'";
+    // Get the call time array as a single record, with languages
+    // listed sequentially.
+    $sql = "SELECT entry_id, contact_id, day, earliest, latest, ".
+            "receive_texts, receive_calls, receive_call_answered_alerts, ".
+            "GROUP_CONCAT(language_id) AS language_ids FROM call_times ".
+            "WHERE entry_id='".addslashes($id)."' GROUP BY entry_id, ".
+            "contact_id, day, earliest, latest, receive_texts, ".
+            "receive_calls, receive_call_answered_alerts";
     db_db_getrow($sql, $call_time, $error);
     $call_time['earliest'] = getDisplayableTime($call_time['earliest']);
     $call_time['latest'] = getDisplayableTime($call_time['latest']);
+    $call_time['language_ids'] = explode(",", $call_time['language_ids']);
 
     // Get the name of the contact.
     $sql = "SELECT contact_name FROM contacts WHERE id='".
@@ -58,8 +65,8 @@ if ($modal_action == "Add") {
 if ($modal_action == "Edit") {
     ?>
 
-       <input type="hidden" name="call_time[id]"
-            value="<?php echo $call_time['id'] ?>">
+       <input type="hidden" name="call_time[entry_id]"
+            value="<?php echo $call_time['entry_id'] ?>">
 
        <?php
 }
@@ -102,39 +109,12 @@ foreach (array('all', 'weekdays', 'weekends', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu',
                     value="<?php echo $call_time['latest'] ?>">
           </div>
           <div class="form-group">
-            <?php
-
-// Create an option for each language if adding, or just show the language
-// selected if editing. This is because the language cannot be editable,
-// since only one of the entries created originally is being edited, and
-// the original addition of the call time may have created multiple entries,
-// one per language.
-//
-// TODO: If the call_times table is changed at some point to associate
-// multiple languages with a single entry, get rid of the code that makes
-// language read-only here; instead, allow all the checkboxes as with a
-// new call time entry.
-if ($modal_action == "Edit") {
-    ?>
-            <input type="hidden" name="call_time[language_id]"
-                value="<?php echo $call_time['language_id'] ?>">
-            <label>Language: </label>
-            <?php
-
-    // Look up the language.
-    $sql = "SELECT language FROM languages WHERE id = '".$call_time["language_id"]."'";
-    db_db_getone($sql, $language, $error);
-    echo " ". $language;
-} else {
-
-            // Output the languages label.?>
             <label>Languages: </label>
             <?php
 
     // Look up the language options.
     $sql = "SELECT id,language FROM languages ORDER BY language";
     db_db_query($sql, $languages, $error);
-
     foreach ($languages as $language) {
 
             // Output the language checkboxes.?>
@@ -143,7 +123,7 @@ if ($modal_action == "Edit") {
                     name="call_time_languages[<?php echo $language['id'] ?>]"
                     <?php
 
-if (($call_time['language_id'] == null) || ($call_time['language_id'] == $language['id'])) {
+if (($call_time['language_ids'] == null) || in_array($language['id'], $call_time['language_ids'])) {
     echo " checked";
 } ?>>
                 <?php echo $language['language'] ?>
@@ -152,7 +132,7 @@ if (($call_time['language_id'] == null) || ($call_time['language_id'] == $langua
 
     // End of the foreach loop creating language options.
     }
-}?>
+?>
           </div>
           <div class="form-group">
             <label for="calltime_texts">Receive: </label>

@@ -7,6 +7,51 @@
 */
 
 /**
+* Lock the call_times table and any associated tables, modifying the specified
+* error message to hold an error if a problem occurs.
+*
+* @param string &$error
+*   Message to be modified to include any error that occurred, if an error
+*   occurs while attempting the unlock.
+* @param string $errorPrefix
+*   Prefix to be prepended any error that occurs; should be something like
+*   "The operation failed" with no terminating punctuation.
+* @return bool
+*   True if the tables were locked, false otherwise.
+*/
+function lockCallTimesTables(&$error, $errorPrefix)
+{
+    if (!db_db_command("LOCK TABLES call_times WRITE, call_times AS t2 WRITE", $error)) {
+        $error = $errorPrefix." because the table could not be locked in the database.";
+        return false;
+    }
+    return true;
+}
+
+/**
+* Unlock any locked tables, modifying the specified error message if any.
+*
+* @param string &$error
+*   Message to be modified to include any error that occurred, if an error
+*   occurs while attempting the unlock.
+* @return bool
+*   True if the tables were unlocked, false otherwise.
+*/
+function unlockTables(&$error)
+{
+    if (!db_db_command("UNLOCK TABLES", $error)) {
+        if (empty($error)) {
+            $error = "The tables could not be unlocked in the database.";
+        } else {
+            $error = $error."<br><br>Additionally, The tables could not ".
+                    "be unlocked in the database.";
+        }
+        return false;
+    }
+    return true;
+}
+
+/**
 * Determine whether or not the values in the two specified arrays found
 * under the specified indices are equal.
 *
@@ -311,6 +356,28 @@ function createCallTimeTypesTableCell(
 }
 
 /**
+* Get the next available (free) entry identifier.
+*
+* @param string &$entryIdentifier
+*   Variable to be modified to hold the next available entry identifier.
+* @param string &$error
+*   Variable to be modified to hold an error description, if the attempt
+*   to get the entry identifier fails.
+* @return bool
+*   True if the attempt succeeds, false otherwise.
+*/
+function getNextAvailableEntryIdentifier(&$entryIdentifier, &$error)
+{
+    $query = "SELECT MIN(t1.entry_id) AS next_entry_id FROM (SELECT 1 AS entry_id ".
+            "UNION ALL SELECT entry_id + 1 FROM call_times) t1 LEFT OUTER JOIN ".
+            "call_times t2 ON t1.entry_id = t2.entry_id WHERE t2.entry_id IS NULL";
+    if (!db_db_getone($query, $entryIdentifier, $error)) {
+        return false;
+    }
+    return true;
+}
+
+/**
 * Add a single call time entry to the database.
 *
 * Data is passed from a modal form.
@@ -368,7 +435,7 @@ function addCallTime($call_time, $call_time_languages, &$error, &$message)
         }
     }
     if (count($languages) == 0) {
-        $error = "The call time record could not be added because no ".
+        $error = "The call time entry could not be added because no ".
                 "language was specified.";
         return false;
     }
@@ -382,30 +449,76 @@ function addCallTime($call_time, $call_time_languages, &$error, &$message)
     $alerts = (isset($call_time['receive_call_answered_alerts']) &&
             ($call_time['receive_call_answered_alerts'] == 'on'));
     if (!$texts && !$calls && !$alerts) {
-        $error = "The call time record could not be added because no ".
+        $error = "The call time entry could not be added because no ".
                 "'received type' checkbox (texts, calls, or call ".
                 "answered alerts) was specified.";
         return false;
     }
 
-    // Add one call_times record for each language.
+    // Lock the tables.
+    if (!lockCallTimesTables($error, "The call time entry could not be added")) {
+        return false;
+    }
+
+    // Ensure that an identical entry does not already exist.
+    $earliest = addslashes(date("H:i:s", strtotime($call_time['earliest'])));
+    $latest = addslashes(date("H:i:s", strtotime($call_time['latest'])));
+    $receive_texts = ($texts ? "y" : "n");
+    $receive_calls = ($calls ? "y" : "n");
+    $receive_call_answered_alerts = ($alerts ? "y" : "n");
+    $query = "SELECT EXISTS(SELECT 1 FROM call_times WHERE ".
+        "contact_id = ".addslashes($call_time['contact_id'])." AND ".
+        "day = '".addslashes($call_time['day'])."' AND earliest = '".
+        $earliest."' AND latest = '".$latest."' AND receive_texts = '".
+        $receive_texts."' AND receive_calls = '".$receive_calls.
+        "' AND receive_call_answered_alerts = '".$receive_call_answered_alerts.
+        "')";
+    if (!db_db_getone($query, $results, $error)) {
+        $error = "The call time entry could not be added because an error ".
+                "occurred while checking for duplicate entries: ".$error;
+        unlockTables($error);
+        return false;
+    }
+    if ($results) {
+        $error = "The call time entry could not be added because it ".
+                "is a duplicate of an existing entry.";
+        unlockTables($error);
+        return false;
+    }
+
+    // Get the next available entry identifier.
+    if (!getNextAvailableEntryIdentifier($entryIdentifier, $error)) {
+        $error = "The call time entry could not be added because the next ".
+                "available entry identifier could not be determined: ".$error;
+        unlockTables($error);
+        return false;
+    }
+
+    // Add one call_times record for each language, with all records having
+    // the same entry identifier.
     foreach ($languages as $language) {
         $sql = "INSERT INTO call_times SET ".
+            "entry_id='".addslashes($entryIdentifier)."',".
             "contact_id='".addslashes($call_time['contact_id'])."',".
             "day='".addslashes($call_time['day'])."',".
-            "earliest='".addslashes(date("H:i:s", strtotime($call_time['earliest'])))."',".
-            "latest='".addslashes(date("H:i:s", strtotime($call_time['latest'])))."',".
+            "earliest='".$earliest."',".
+            "latest='".$latest."',".
             "language_id='".addslashes($language)."',".
-            "receive_texts='". ($texts ? 'y' : 'n') . "',".
-            "receive_calls='". ($calls ? 'y' : 'n') . "',".
-            "receive_call_answered_alerts='". ($alerts ? 'y' : 'n') ."'";
+            "receive_texts='".$receive_texts."',".
+            "receive_calls='".$receive_calls."',".
+            "receive_call_answered_alerts='".$receive_call_answered_alerts."'";
         if (!db_db_command($sql, $error)) {
+            $error = "The call time entry could not be fully added due to ".
+                    "a database error: ".$error;
+            unlockTables($error);
             return false;
         }
     }
 
+    // Unlock the tables.
     $message = "The call time entry was added.";
-    return true;
+    $error = null;
+    return unlockTables($error);
 }
 /**
 * Edit a single call time entry in the database.
@@ -424,10 +537,7 @@ function addCallTime($call_time, $call_time_languages, &$error, &$message)
 *           answered alerts.
 * @param array $call_time_languages
 *   Call time languages array; each key is a language identifier, and the corresponding
-*   value is 'on' if that language is included. NOTE: This is ignored for now; at This
-*   time, languages cannot be edited, since only one entry is being edited for a call
-*   time, and the original call time may have had multiple entries created for it, one
-*   per language.
+*   value is 'on' if that language is included.
 * @param string &$error
 *   Errors if any occurred.
 * @param string &$message
@@ -452,6 +562,19 @@ function editCallTime($call_time, $call_time_languages, &$error, &$message)
         $updates[] = "latest='". addslashes(date("H:i:s", strtotime($call_time['latest']))). "'";
     }
 
+    // Get the list of languages for which to create rows.
+    $languages = array();
+    foreach ($call_time_languages as $language => $include) {
+        if ($include == 'on') {
+            $languages[] = $language;
+        }
+    }
+    if (count($languages) == 0) {
+        $error = "The call time entry could not be updated because no ".
+                "language was specified.";
+        return false;
+    }
+
     // Ensure at least one checkbox is selected (for texts, calls, or
     // answered alerts.
     $texts = (isset($call_time['receive_texts']) && ($call_time['receive_texts'] == 'on'));
@@ -459,7 +582,7 @@ function editCallTime($call_time, $call_time_languages, &$error, &$message)
     $alerts = (isset($call_time['receive_call_answered_alerts']) &&
             ($call_time['receive_call_answered_alerts'] == 'on'));
     if (!$texts && !$calls && !$alerts) {
-        $error = "The call time record could not be edited because no ".
+        $error = "The call time entry could not be updated because no ".
                 "'received type' checkbox (texts, calls, or call ".
                 "answered alerts) was specified.";
         return false;
@@ -470,20 +593,85 @@ function editCallTime($call_time, $call_time_languages, &$error, &$message)
 
     // Do nothing if nothing has been found to update.
     if (count($updates) == 0) {
-        $message = "The call time entry was not updated since no edits were specified.";
+        $message = "The call time entry was not updated since no changes ".
+                "were specified.";
         return true;
     }
 
-    // Update the entry in the table.
-    $sql = "UPDATE call_times SET ". implode(", ", $updates). " WHERE id='".
-            addslashes($call_time['id']). "'";
-    if (!db_db_command($sql, $error)) {
+    // Lock the tables.
+    if (!lockCallTimesTables(
+        $error,
+            "The call time entry could not be updated"
+    )) {
         return false;
     }
 
-    $message = "The call time entry was updated.";
+    // Ensure that an identical entry does not already exist.
+    $earliest = addslashes(date("H:i:s", strtotime($call_time['earliest'])));
+    $latest = addslashes(date("H:i:s", strtotime($call_time['latest'])));
+    $receive_texts = ($texts ? "y" : "n");
+    $receive_calls = ($calls ? "y" : "n");
+    $receive_call_answered_alerts = ($alerts ? "y" : "n");
+    $query = "SELECT EXISTS(SELECT 1 FROM call_times WHERE ".
+        "contact_id = ".addslashes($call_time['contact_id'])." AND ".
+        "day = '".addslashes($call_time['day'])."' AND earliest = '".
+        $earliest."' AND latest = '".$latest."' AND receive_texts = '".
+        $receive_texts."' AND receive_calls = '".$receive_calls.
+        "' AND receive_call_answered_alerts = '".$receive_call_answered_alerts.
+        "' AND entry_id != ".$call_time['entry_id'].")";
+    if (!db_db_getone($query, $results, $error)) {
+        $error = "The call time entry could not be updated because an error ".
+                "occurred while checking for duplicate entries: ".$error;
+        unlockTables($error);
+        return false;
+    }
+    if ($results) {
+        $error = "The call time entry could not be updated because the ".
+                "changes would have resulted in it being a duplicate ".
+                "of an existing entry.";
+        unlockTables($error);
+        return false;
+    }
 
-    return true;
+    // Since the updated entry may require a different number of records
+    // from the original version, delete the old records.
+    //
+    // TODO: The algorithm could be made smarter, and reuse existing rows
+    // in the table where possible. This is somewhat less elegant.
+    $sql = "DELETE FROM call_times WHERE entry_id='".
+            addslashes($call_time['entry_id'])."'";
+    if (!db_db_command($sql, $error)) {
+        $error = "The call time entry could not be updated because an error ".
+                "occurred while deleting the old entry: ".$error;
+        unlockTables($error);
+        return false;
+    }
+
+    // Add one call_times record for each language, with all records having
+    // the same entry identifier.
+    foreach ($languages as $language) {
+        $sql = "INSERT INTO call_times SET ".
+            "entry_id='".addslashes($call_time['entry_id'])."',".
+            "contact_id='".addslashes($call_time['contact_id'])."',".
+            "day='".addslashes($call_time['day'])."',".
+            "earliest='".$earliest."',".
+            "latest='".$latest."',".
+            "language_id='".addslashes($language)."',".
+            "receive_texts='".$receive_texts."',".
+            "receive_calls='".$receive_calls."',".
+            "receive_call_answered_alerts='".$receive_call_answered_alerts."'";
+        if (!db_db_command($sql, $error)) {
+            $error = "The call time entry could not be fully updated due to ".
+                    "a database error: ".$error;
+            unlockTables($error);
+            return false;
+        }
+    }
+
+    // Unlock the tables.
+    $message = "The call time entry was updated.";
+    $error = null;
+    return unlockTables($error);
 }
 
 /**
@@ -492,22 +680,21 @@ function editCallTime($call_time, $call_time_languages, &$error, &$message)
 * ...
 *
 * @param int $id
-*   Call time id to remove.
+*   Call time entry identifier to remove.
 * @param string &$error
 *   Errors if any occurred.
 * @param string &$message
 *   An informational message if appropriate.
-*
 * @return bool
 *   True unless an error occurred.
 */
 function removeCallTime($id, &$error, &$message)
 {
-    $sql = "DELETE FROM call_times WHERE id='".addslashes($id)."'";
+    $sql = "DELETE FROM call_times WHERE entry_id='".addslashes($id)."'";
     if (!db_db_command($sql, $error)) {
         return false;
     }
 
-    $message = "The record was removed.";
+    $message = "The entry was removed.";
     return true;
 }

@@ -156,6 +156,47 @@ if ($display_type == "chronological") {
 include 'footer.php';
 
 /**
+* Lock the call_times table and any associated tables, modifying the specified
+* error message to hold an error if a problem occurs.
+*
+* @param string $staffLine
+*   Line that was being added as new staff and/or new time.
+* @param string &$error
+*   Message to be modified to include any error that occurred, if an error
+*   occurs while attempting the lock.
+* @return bool
+*   True if the tables were locked, false otherwise.
+*/
+function lockCallTimesTablesForStaffAddition($staffLine, &$error)
+{
+    if (!db_db_command("LOCK TABLES call_times WRITE, call_times AS t2 WRITE", $thisError)) {
+        $error .= "{$staff_line}: ".$thisError."<br />\n";
+        return false;
+    }
+    return true;
+}
+
+/**
+* Unlock any locked tables, modifying the specified error message if any.
+*
+* @param string $staffLine
+*   Line that was being added as new staff and/or new time.
+* @param string &$error
+*   Message to be modified to include any error that occurred, if an error
+*   occurs while attempting the unlock.
+* @return bool
+*   True if the tables were unlocked, false otherwise.
+*/
+function unlockTablesForStaffAddition($staffLine, &$error)
+{
+    if (!db_db_command("UNLOCK TABLES", $thisError)) {
+        $error .= "{$staff_line}: ".$thisError."<br />\n";
+        return false;
+    }
+    return true;
+}
+
+/**
 * Add staff to the database
 *
 * Each entry is separated by a newline.  Format:
@@ -186,7 +227,7 @@ function addStaff($staff, &$error, &$message)
     // iterate through each staff entry
     $success_count = 0;
     foreach ($staff_lines as $staff_line) {
-        if (!trim($staff_line)) {
+        if (!$staff_line = trim($staff_line)) {
             continue;
         }
 
@@ -276,24 +317,82 @@ function addStaff($staff, &$error, &$message)
             $language_id = "1";
             $sql = "SELECT id FROM languages WHERE keypress='". addslashes($staff_array[5]) . "'";
             if (!db_db_getone($sql, $language_id, $db_error)) {
-                $error = "{$staff_line}: {$db_error}<br />\n";
-                continue;
-            }
-
-            // add a call_times record
-            $sql = "INSERT INTO call_times SET ".
-                "contact_id='".addslashes($contact['id'])."',".
-                "day='".trim(addslashes($staff_array[2]))."',".
-                "earliest='".addslashes(date("H:i:s", strtotime($staff_array[3])))."',".
-                "latest='".addslashes(date("H:i:s", strtotime($staff_array[4])))."',".
-                "language_id='".addslashes($language_id)."',".
-                "receive_texts='". ($staff_array[6] ? 'y' : 'n') . "',".
-                "receive_calls='". ($staff_array[7] ? 'y' : 'n') . "',".
-                "receive_call_answered_alerts='". ($staff_array[8] ? 'y' : 'n') . "'";
-            if (!db_db_command($sql, $db_error)) {
                 $error .= "{$staff_line}: {$db_error}<br />\n";
                 continue;
             }
+
+            // Lock the tables.
+            if (!lockCallTimesTablesForStaffAddition($staff_line, $error)) {
+                continue;
+            }
+
+            // Ensure that an identical entry does not already exist.
+            $earliest = addslashes(date("H:i:s", strtotime($staff_array[3])));
+            $latest = addslashes(date("H:i:s", strtotime($staff_array[4])));
+            $receive_texts = ($staff_array[6] ? 'y' : 'n');
+            $receive_calls = ($staff_array[7] ? 'y' : 'n');
+            $receive_call_answered_alerts = ($staff_array[8] ? 'y' : 'n');
+            $query = "SELECT EXISTS(SELECT 1 FROM call_times WHERE ".
+                "contact_id = ".addslashes($contact['id'])." AND ".
+                "day = '".trim(addslashes($staff_array[2]))."' AND earliest = '".
+                $earliest."' AND latest = '".$latest."' AND receive_texts = '".
+                $receive_texts."' AND receive_calls = '".$receive_calls.
+                "' AND receive_call_answered_alerts = '".
+                $receive_call_answered_alerts."' AND language_id = '".
+                addslashes($language_id)."')";
+            if (!db_db_getone($query, $results, $thisError)) {
+                $error .= "{$staff_line}: {$thisError}<br />\n";
+                unlockTablesForStaffAddition($staff_line, $error);
+                continue;
+            }
+            if ($results) {
+                $thisError = "The call time record could not be added because it ".
+                        "is a duplicate of an existing entry.";
+                $error .= "{$staff_line}: {$thisError}<br />\n";
+                unlockTablesForStaffAddition($staff_line, $error);
+                continue;
+            }
+
+            // See if an entry that should be grouped with this one exists,
+            // and if so, use its entry identifier; otherwise, use a new
+            // entry identifier.
+            $query = "SELECT entry_id FROM call_times WHERE ".
+                "contact_id = ".addslashes($contact['id'])." AND ".
+                "day = '".trim(addslashes($staff_array[2]))."' AND earliest = '".
+                $earliest."' AND latest = '".$latest."' AND receive_texts = '".
+                $receive_texts."' AND receive_calls = '".$receive_calls.
+                "' AND receive_call_answered_alerts = '".
+                $receive_call_answered_alerts."' LIMIT 1";
+            if (!db_db_getone($query, $entryIdentifier, $thisError)) {
+                $error .= "{$staff_line}: {$thisError}<br />\n";
+                unlockTablesForStaffAddition($staff_line, $error);
+                continue;
+            }
+            if (!$entryIdentifier) {
+                if (!getNextAvailableEntryIdentifier($entryIdentifier, $thisError)) {
+                    $error .= "{$staff_line}: {$thisError}<br />\n";
+                    unlockTablesForStaffAddition($staff_line, $error);
+                    continue;
+                }
+            }
+
+            // Add a call_times record.
+            $sql = "INSERT INTO call_times SET ".
+                "entry_id='".$entryIdentifier."',".
+                "contact_id='".addslashes($contact['id'])."',".
+                "day='".trim(addslashes($staff_array[2]))."',".
+                "earliest='".$earliest."',".
+                "latest='".$latest."',".
+                "language_id='".addslashes($language_id)."',".
+                "receive_texts='".$receive_texts."',".
+                "receive_calls='".$receive_calls."',".
+                "receive_call_answered_alerts='".$receive_call_answered_alerts. "'";
+            if (!db_db_command($sql, $db_error)) {
+                $error .= "{$staff_line}: {$db_error}<br />\n";
+            }
+
+            // Unlock the tables.
+            unlockTablesForStaffAddition($staff_line, $error);
         }
 
         // import successful
