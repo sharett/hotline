@@ -60,6 +60,13 @@ if ($success) {
 <?php
 }
 
+// is a broadcast in progress?
+if (sms_isBroadcastInProgress($remaining, $error)) {
+?>
+	      <div class="alert alert-info" role="alert">Broadcasts in progress (approx. <b><?php echo $remaining ?></b> remaining)</div>
+<?php
+}
+
 ?>
 		  <h2 class="sub-header">Broadcast</h2>
 		  <ul class="nav nav-pills">
@@ -260,9 +267,6 @@ function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true
 	
 	// send the welcome messages if set
 	if ($send_welcome && $BROADCAST_WELCOME) {
-		// use the first caller id as the default
-		$broadcast_from = reset($BROADCAST_CALLER_IDS);
-
 		// use the Twilio Notify service?
 		if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
 			// yes
@@ -271,7 +275,7 @@ function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true
 		} else {
 			// no, send the texts one by one
 			sms_send($success_numbers, $BROADCAST_WELCOME, $send_error, 
-					 $broadcast_from, $BROADCAST_PROGRESS_MARK_EVERY);
+					 $BROADCAST_CALLER_IDS, $BROADCAST_PROGRESS_MARK_EVERY);
 			$error .= $send_error;
 		}
 	}

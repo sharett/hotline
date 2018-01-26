@@ -49,11 +49,19 @@ $BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
 
 // If set, callers will hear this message in each language and then it will hang up.  The format is an array, 
 // with each key the language code, and the value the text to read in that language.  "es-MX" is Spanish, 
-// "en-US" is English.
+// "en-US" is English.  Don't set this and $BROADCAST_SEND_TO_HOTLINE.
 // Example: 'en-US' => "Goodbye"
 $BROADCAST_VOICE_MESSAGES = array(
 
 );
+
+// If set, callers to the broadcast numbers will be redirected to this hotline.
+// Don't set this and $BROADCAST_VOICE_MESSAGES
+$BROADCAST_SEND_TO_HOTLINE = '';
+
+// When a broadcast text is sent that is limited to certain tags, this text will be added to the database 
+// records of the text.
+$BROADCAST_LIMITED_TO_TAGS_TEXT = "LIMITED TO TAGS";
 
 // List users authorized to send broadcast texts here.  Leave blank to allow all users.
 $BROADCAST_AUTHORIZED_USERS = array();

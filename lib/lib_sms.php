@@ -66,7 +66,7 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 /**
 * Send a text message to a list of numbers
 *
-* ...
+* If more than one from number is specified, they are rotated through.
 * 
 * @param array $numbers
 *   Array of phone numbers to send the text to.
@@ -74,8 +74,8 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 *   The body of the text message.
 * @param string &$error
 *   An error if one occurred.
-* @param string $from = ''
-*   The number to send from.  Defaults to the first $HOTLINES key.
+* @param string OR array $from = ''
+*   The number(s) to send from.  Defaults to the first $HOTLINES key.
 * @param int $progress_every = 0
 *   If nonzero, displays a progress mark after this many messages are sent.
 *   
@@ -96,17 +96,24 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 		echo '<p>Sending ';
 	}
 	
+	// make $from into an array if it isn't already
+	if (!is_array($from)) {
+		$from = array($from);
+	}
+	
 	// default from number
-	if (!$from) {
-		if (!sms_getFirstHotline($from, $hotline, $error)) {
+	if (empty($from)) {
+		$from_number = '';
+		if (!sms_getFirstHotline($from_number, $hotline, $error)) {
 			return false;
 		}
+		$from = array($from_number);
 	}
 	
 	// create a Twilio client
 	$client = new Client($TWILIO_ACCOUNT_SID, $TWILIO_AUTH_TOKEN);
 
-	// send the messages
+	// send the messages, iterating through each $from number
 	$error = '';
 	$count = 0;
 	$error_count = 0;
@@ -116,7 +123,7 @@ function sms_send($numbers, $text, &$error, $from = '', $progress_every = 0)
 		
         try {
             $client->messages->create($number,
-				array('from' => $from,
+				array('from' => $from[$count % count($from)],
                       'body' => $text)
 			);
         } catch (Exception $e) {
@@ -196,6 +203,56 @@ function sms_sendViaNotify($numbers, $text, &$error)
 	}
         
 	return true;
+}
+
+/**
+* Check to see if a broadcast is in progress
+*
+* Calculate how many seconds remain until all texts are sent if so.
+* 
+* @param string &$remaining
+*   Set to the number of minutes and seconds remaining, in "MM:SS" format,
+*   if a broadcast is in progress.
+* @param string &$error
+*   An error if one occurred.
+*   
+* @return bool
+*   True if a broadcast is in progress.
+*/
+
+function sms_isBroadcastInProgress(&$remaining, &$error)
+{
+	// load broadcast texts in the last day
+	$sql = "SELECT twilio_sid,communication_time FROM communications ".
+		"WHERE twilio_sid LIKE 'text%' AND ".
+			"communication_time > DATE_SUB(NOW(), INTERVAL 1 DAY) ".
+		"ORDER BY communication_time";
+	if (!db_db_query($sql, $broadcasts, $error)) {
+		return false;
+	}
+
+	// move forward through each broadcast, cumulatively adding to the time as needed
+	$running_time = 0;
+	foreach ($broadcasts as $broadcast) {
+		$broadcast_time_unix = strtotime($broadcast['communication_time']);
+		
+		if ($running_time < $broadcast_time_unix) {
+			$running_time = $broadcast_time_unix;
+		}
+		
+		// the number of texts sent is after "text "
+		$running_time += (int)substr($broadcast['twilio_sid'], 5);
+	}
+	
+	// is any time remaining?
+	$seconds = $running_time - time();
+	if ($seconds > 0) {
+		$remaining = sprintf("%d:%02d", floor($seconds / 60), $seconds % 60);
+		return true;
+	} else {
+		$remaining = '';
+		return false;
+	}
 }
 
 /**
@@ -744,7 +801,8 @@ function sms_getBroadcastResponse(&$broadcast_response, &$error)
 
 function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 {
-	global $BROADCAST_CALLER_IDS, $BROADCAST_TWILIO_NOTIFY_SERVICE;
+	global $BROADCAST_CALLER_IDS, $BROADCAST_TWILIO_NOTIFY_SERVICE,
+		   $BROADCAST_LIMITED_TO_TAGS_TEXT;
 	
 	// look up the broadcast id for this number
 	$sql = "SELECT id FROM broadcast WHERE phone='".addslashes($from)."' AND status='active'";
@@ -769,6 +827,32 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 	if ($broadcast_response_id) {
 		// yes, they are already subscribed
 		return true;
+	}
+	
+	// if the broadcast text is limited to specific tags, make sure that this number belongs
+	// to one of those tags
+	$position = strpos($broadcast_response['body'], $BROADCAST_LIMITED_TO_TAGS_TEXT);
+	if ($position !== false) {
+		// break out the tags from the body
+		$start_pos = $position + strlen($BROADCAST_LIMITED_TO_TAGS_TEXT) + 2;
+		$tags = substr($broadcast_response['body'], $start_pos, 
+			strlen($broadcast_response['body']) - $start_pos - 1);
+		$tags_array = explode(', ', $tags);
+		
+		// check to see if any tags match
+		foreach ($tags_array as $id => $tag) {
+			$tags_array[$id] = "'" . addslashes($tag) . "'";
+		}	
+		$sql = "SELECT COUNT(*) FROM broadcast_tags ".
+			"WHERE broadcast_id='".addslashes($broadcast_id)."' AND ".
+			"tag IN (" . implode(',', $tags_array) . ")";
+		if (!db_db_getone($sql, $matches, $error)) {
+			return false;
+		}
+		if (!$matches) {
+			// no, they are not part of this broadcast, ignore their request
+			return false;
+		}
 	}
 	
 	// no, add them to the list
@@ -807,9 +891,6 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 		
 		$numbers = array($from);
 				
-		// use the first caller id as the default
-		$broadcast_from = reset($BROADCAST_CALLER_IDS);
-
 		// send via Twilio notify?
 		if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
 			// yes
@@ -817,8 +898,8 @@ function sms_addToBroadcastResponse($broadcast_response, $from, &$error)
 				return false;
 			}
 		} else {
-			// no, send the texts one by one using the first broadcast caller_id
-			if (!sms_send($numbers, $update_message, $error, $broadcast_from)) {
+			// no, send the texts one by one
+			if (!sms_send($numbers, $update_message, $error, $BROADCAST_CALLER_IDS)) {
 				return false;
 			}
 		}

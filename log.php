@@ -57,17 +57,7 @@ if (!db_db_query($sql, $comms, $error)) {
 }
 
 ?>
-        <h2 class="sub-header">Hotline</h2>
-          <ul class="nav nav-pills">
-            <li role="presentation"><a href="hotline_active_calls.php">Active Calls</a></li>
-            <li role="presentation"><a href="hotline_staff.php">Staff</a></li>
-            <li role="presentation"><a href="hotline_blocks.php">Blocks</a></li>
-            <li role="presentation"><a href="hotline_languages.php">Languages</a></li>
-            <li role="presentation" class="active"><a href="log.php?ph=<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? urlencode($hotline_number) : '' ?>">Log</a></li>
-          </ul>
-          <br />
-
-          <h3 class="sub-header">Log</h3>
+        <h2 class="sub-header">Log</h2>
           <p>Click a phone number to view all communications with that number.  Click the response button or link to mark or
           unmark an item as responded to.</p>
           <form id="choose_number" action="log.php" method="GET" class="form-inline">

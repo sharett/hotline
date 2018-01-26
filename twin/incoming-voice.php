@@ -8,7 +8,8 @@
 * 
 * Calls to the broadcast number will play recorded messages in each
 * language and hangup, if messages are set.  Otherwise, calls will be 
-* routed to the hotline.
+* routed to a hotline, if $BROADCAST_SEND_TO_HOTLINE is set.  Otherwise,
+* $HOTLINE_GOODBYE will be played, and the call will hangup.
 * 
 */
 
