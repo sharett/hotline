@@ -330,6 +330,21 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		return false;
 	}
 
+    // calculate how many texts will be sent, divide it by the number
+	// of broadcast numbers, and store that in the MessageSid (twilio_sid)
+	// field, which is not otherwise used
+	$count_per_number = floor(strlen($text) / 160) + 1;
+	$seconds_total = ceil(($count_per_number * count($numbers)) / count($BROADCAST_CALLER_IDS));
+	
+	// store the text
+	$data = array(
+		'From' => reset($BROADCAST_CALLER_IDS),
+		'To' => ($request_response ? 'BROADCAST_RESPONSE' : 'BROADCAST'),
+		'Body' => $text . $tags_description,
+		'MessageSid' => 'text ' . $seconds_total
+	);
+	sms_storeCallData($data, $error);
+
 	// send via Twilio notify?
 	if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
 		// yes
@@ -344,21 +359,6 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		}
 	}
 	
-	// calculate how many texts were just sent, divide it by the number
-	// of broadcast numbers, and store that in the MessageSid (twilio_sid)
-	// field, which is not otherwise used
-	$count_per_number = floor(strlen($text) / 160) + 1;
-	$seconds_total = ceil(($count_per_number * count($numbers)) / count($BROADCAST_CALLER_IDS));
-	
-	// store the text
-	$data = array(
-		'From' => $broadcast_from,
-		'To' => ($request_response ? 'BROADCAST_RESPONSE' : 'BROADCAST'),
-		'Body' => $text . $tags_description,
-		'MessageSid' => 'text ' . $seconds_total
-	);
-	sms_storeCallData($data, $error);
-
 	$message = "Text sent to " . count($numbers) . " numbers" .
 		($error ? ' (except errors listed above).' : '.');
 	return true;
@@ -427,6 +427,21 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 		return false;
 	}
 	
+	// calculate how many texts will be sent, divide it by the number
+	// of broadcast numbers, and store that in the MessageSid (twilio_sid)
+	// field, which is not otherwise used
+	$count_per_number = floor(strlen($text) / 160) + 1;
+	$seconds_total = ceil(($count_per_number * count($numbers)) / count($BROADCAST_CALLER_IDS));
+	
+	// store the text
+	$data = array(
+		'From' => reset($BROADCAST_CALLER_IDS),
+		'To' => 'BROADCAST_RESPONSE_UPDATE',
+		'Body' => $text,
+		'MessageSid' => 'text ' . $seconds_total
+	);
+	sms_storeCallData($data, $error);
+
 	// send via Twilio notify?
 	if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
 		// yes
@@ -441,21 +456,6 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 		}
 	}
 	
-	// calculate how many texts were just sent, divide it by the number
-	// of broadcast numbers, and store that in the MessageSid (twilio_sid)
-	// field, which is not otherwise used
-	$count_per_number = floor(strlen($text) / 160) + 1;
-	$seconds_total = ceil(($count_per_number * count($numbers)) / count($BROADCAST_CALLER_IDS));
-	
-	// store the text
-	$data = array(
-		'From' => $broadcast_from,
-		'To' => 'BROADCAST_RESPONSE_UPDATE',
-		'Body' => $text,
-		'MessageSid' => 'text ' . $seconds_total
-	);
-	sms_storeCallData($data, $error);
-
 	$message = "Text sent to " . count($numbers) . " numbers.";
 	return true;
 }
