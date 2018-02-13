@@ -42,10 +42,10 @@ $BROADCAST_CALLER_IDS = array('+1NXXNXXXXXX');
 $BROADCAST_TWILIO_NOTIFY_SERVICE = '';
 
 // Broadcast prompts
-$BROADCAST_WELCOME = "Welcome to the ". $HOTLINE_NAME . " alert list. ".
-	"To remove yourself from the list, text OFF. To put yourself back on, ".
+$BROADCAST_WELCOME = "Welcome to the alert list. ".
+	"To remove yourself from the list, text OFF.";
+$BROADCAST_GOODBYE = "You will no longer receive alerts. To put yourself back on, ".
 	"text ON.";
-$BROADCAST_GOODBYE = "You will no longer receive ". $HOTLINE_NAME . " alerts.";
 
 // If set, callers will hear this message in each language and then it will hang up.  The format is an array, 
 // with each key the language code, and the value the text to read in that language.  "es-MX" is Spanish, 
