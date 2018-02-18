@@ -143,9 +143,9 @@ if (!empty($success)) {
 		   <input type="hidden" name="action" value="broadcast">
 		   <div class="form-group">
 			<label for="text_entry">Send a new broadcast text message:</label>
-			<input type="text" class="form-control" name="text" maxLength="1600" 
+			<textarea class="form-control" rows="3" name="text" maxLength="1600"
 			       id="text_entry" onKeyUp="showTextLength();" onKeyDown="showTextLength();"
-			       placeholder="Text message" value="<?php echo $text ?>">
+			       placeholder="Text message"><?php echo $text ?></textarea>
 			<p class="help-block" id="text_entry_length">&nbsp;</p>
  		   </div>
 
@@ -207,9 +207,9 @@ if ($broadcast_response) {
 			<label for="broadcast_text_entry"><?php echo count($broadcast_response_confirmed) ?> 
 				<?php echo (count($broadcast_response_confirmed) == 1) ? 'person has' : 'people have' ?> replied.  
 				Send them a text:</label>
-			<input type="text" class="form-control" name="text" 
+			<textarea class="form-control" rows="3" name="text" maxLength="1600"
 			       id="broadcast_text_entry"
-			       placeholder="Text message" value="<?php echo $text ?>">
+			       placeholder="Text message"><?php echo $text ?></textarea>
  		   </div>
 		   <button class="btn btn-success" id="button-text">Send update</button>
 		  </form>
