@@ -4,32 +4,33 @@
 * Form to export communications to CSV file
 *
 * The export.php file performs the export.
-* 
+*
 * Variables:
 *   $export[]
 * 		'earliest' => Earliest date/time to include
 * 		'latest' => Latest date/time to include
 * 		'phone' => If set, limits the export to records to or from this number
+*       'type'' => If set, limits the export to this type of record
 */
-
+$export = array("earliest"=>"", "latest"=>"", "phone"=>"", "type"=>"");
 ?>
 	      <h3>Export to CSV</h2>
-		  <form class="form-inline" action="export.php" method="POST">
+		  <form class="form-inline" action="export.php?type=communications" method="POST">
 			<div class="form-group">
 			  <label for="export_earliest">Earliest: </label>
-			  <input type="text" class="form-control" name="export[earliest]" id="export_earliest" 
+			  <input type="text" class="form-control" name="export[earliest]" id="export_earliest"
 			         placeholder="<?php echo date("m/d/y") ?>"
 			         value="<?php echo $export['earliest'] ?>">
 			</div>
 			<div class="form-group">
 			  <label for="export_latest">Latest: </label>
-			  <input type="text" class="form-control" name="export[latest]" id="export_latest" 
+			  <input type="text" class="form-control" name="export[latest]" id="export_latest"
 			         placeholder="<?php echo date("m/d/y"); ?>"
 			         value="<?php echo $export['latest'] ?>">
 			</div>
 			<div class="form-group">
 			  <label for="export_phone">Limit to phone: </label>
-			  <input type="text" class="form-control" name="export[phone]" id="export_phone" 
+			  <input type="text" class="form-control" name="export[phone]" id="export_phone"
 			         placeholder="<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : $BROADCAST_CALLER_ID ?>"
 			         value="<?php echo $export['phone'] ?>">
 			</div>
