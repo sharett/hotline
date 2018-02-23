@@ -95,6 +95,13 @@ if (!empty($success)) {
 <?php
 }
 
+// is a broadcast in progress?
+if (sms_isBroadcastInProgress($remaining, $error)) {
+?>
+	      <div class="alert alert-info" role="alert">Broadcasts in progress (approx. <b><?php echo $remaining ?></b> remaining)</div>
+<?php
+}
+
 // display the broadcast information
 ?>
 
@@ -135,7 +142,7 @@ if (!empty($success)) {
 			<li role="presentation" class="active"><a href="broadcast.php">Send</a></li>
 			<li role="presentation"><a href="broadcast_admin.php">Import &amp; Remove</a></li>
 			<li role="presentation"><a href="broadcast_admin.php?action=list">List</a></li>
-			<li role="presentation"><a href="log.php?ph=<?php echo urlencode($BROADCAST_CALLER_ID) ?>">Log</a></li>
+			<li role="presentation"><a href="log.php?ph=all_broadcast">Log</a></li>
 		  </ul>
 		  <br />
 		  
@@ -263,11 +270,13 @@ updateBroadcastCount();
 
 function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
+	global $BROADCAST_CALLER_IDS, $BROADCAST_PROGRESS_MARK_EVERY, $BROADCAST_TWILIO_NOTIFY_SERVICE,
+		   $BROADCAST_LIMITED_TO_TAGS_TEXT;
 	
 	$error = '';
 	$message = '';
-
+	$tags_description = '';
+	
 	// is there a response request?
 	if (trim($request_response)) {
 		// trim it, and put a space between the text and the response request
@@ -283,13 +292,18 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		return false;
 	}
 	
+	// limited to specific tags?
+	if (count($tags)) {
+		$tags_description = " ({$BROADCAST_LIMITED_TO_TAGS_TEXT}: " . implode(', ', $tags) . ")";
+	}
+	
 	// confirm that the text is not identical to the previous broadcast text sent
 	$sql = "SELECT * FROM communications WHERE phone_to LIKE 'BROADCAST%' ".
 		"ORDER BY communication_time DESC LIMIT 1";
 	if (!db_db_getrow($sql, $last_broadcast, $error)) {
 		return false;
 	}
-	if ($last_broadcast['body'] == $text) {
+	if ($last_broadcast['body'] == ($text . $tags_description)) {
 		// it is identical!
 		$error = "This text is identical to the last one sent - aborting!";
 		return false;
@@ -301,7 +315,7 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		$sql_tags[] = "tag='".addslashes($tag)."'";
 	}
 	
-	// load the broadcast numbers, limited by tags if any tags are set
+	// load the numbers to broadcast to, limited by tags if any tags are set
 	$sql = "SELECT DISTINCT phone FROM broadcast ".
 		(count($tags)
 		    ? ("LEFT JOIN broadcast_tags ON broadcast.id = broadcast_tags.broadcast_id ".
@@ -315,22 +329,36 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 		$error = "No numbers to send to.";
 		return false;
 	}
-	
-	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
-				  $BROADCAST_PROGRESS_MARK_EVERY)) {
-		return false;
-	}
+
+    // calculate how many texts will be sent, divide it by the number
+	// of broadcast numbers, and store that in the MessageSid (twilio_sid)
+	// field, which is not otherwise used
+	$count_per_number = floor(strlen($text) / 160) + 1;
+	$seconds_total = ceil(($count_per_number * count($numbers)) / count($BROADCAST_CALLER_IDS));
 	
 	// store the text
 	$data = array(
-		'From' => $BROADCAST_CALLER_ID,
+		'From' => reset($BROADCAST_CALLER_IDS),
 		'To' => ($request_response ? 'BROADCAST_RESPONSE' : 'BROADCAST'),
-		'Body' => $text . (count($tags) ? (" (LIMITED TO TAGS: " . implode(', ', $tags) . ")") : ''),
-		'MessageSid' => 'text'
+		'Body' => $text . $tags_description,
+		'MessageSid' => 'text ' . $seconds_total
 	);
 	sms_storeCallData($data, $error);
 
+	// send via Twilio notify?
+	if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+		// yes
+		if (!sms_sendViaNotify($numbers, $text, $error)) {
+			return false;
+		}
+	} else {
+		// no, send the texts one by one
+		if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_IDS, 
+					  $BROADCAST_PROGRESS_MARK_EVERY)) {
+			return false;
+		}
+	}
+	
 	$message = "Text sent to " . count($numbers) . " numbers" .
 		($error ? ' (except errors listed above).' : '.');
 	return true;
@@ -356,7 +384,7 @@ function sendBroadcastText($text, $request_response, $tags, &$error, &$message)
 
 function sendBroadcastResponseText($text, $communications_id, &$error, &$message)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY;
+	global $BROADCAST_CALLER_IDS, $BROADCAST_TWILIO_NOTIFY_SERVICE, $BROADCAST_PROGRESS_MARK_EVERY;
 	
 	$error = '';
 	$message = '';
@@ -364,6 +392,16 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 	$text = trim($text);
 	if (!$text) {
 		$error = "No text was provided.";
+		return false;
+	}
+	
+	// make sure the broadcast response hasn't been closed in another window
+	if (!sms_getBroadcastResponse($broadcast_response, $error)) {
+		return false;
+	}
+	if (empty($broadcast_response)) {
+		// it has been closed
+		$error = "Failed to send the text. The broadcast response has been closed.";
 		return false;
 	}
 	
@@ -389,21 +427,35 @@ function sendBroadcastResponseText($text, $communications_id, &$error, &$message
 		return false;
 	}
 	
-	// send the texts
-	if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_ID, 
-	              $BROADCAST_PROGRESS_MARK_EVERY)) {
-		return false;
-	}
+	// calculate how many texts will be sent, divide it by the number
+	// of broadcast numbers, and store that in the MessageSid (twilio_sid)
+	// field, which is not otherwise used
+	$count_per_number = floor(strlen($text) / 160) + 1;
+	$seconds_total = ceil(($count_per_number * count($numbers)) / count($BROADCAST_CALLER_IDS));
 	
 	// store the text
 	$data = array(
-		'From' => $BROADCAST_CALLER_ID,
+		'From' => reset($BROADCAST_CALLER_IDS),
 		'To' => 'BROADCAST_RESPONSE_UPDATE',
 		'Body' => $text,
-		'MessageSid' => 'text'
+		'MessageSid' => 'text ' . $seconds_total
 	);
 	sms_storeCallData($data, $error);
 
+	// send via Twilio notify?
+	if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+		// yes
+		if (!sms_sendViaNotify($numbers, $text, $error)) {
+			return false;
+		}
+	} else {
+		// no, send the texts one by one
+		if (!sms_send($numbers, $text, $error, $BROADCAST_CALLER_IDS, 
+					  $BROADCAST_PROGRESS_MARK_EVERY)) {
+			return false;
+		}
+	}
+	
 	$message = "Text sent to " . count($numbers) . " numbers.";
 	return true;
 }

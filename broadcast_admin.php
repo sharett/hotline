@@ -60,13 +60,20 @@ if ($success) {
 <?php
 }
 
+// is a broadcast in progress?
+if (sms_isBroadcastInProgress($remaining, $error)) {
+?>
+	      <div class="alert alert-info" role="alert">Broadcasts in progress (approx. <b><?php echo $remaining ?></b> remaining)</div>
+<?php
+}
+
 ?>
 		  <h2 class="sub-header">Broadcast</h2>
 		  <ul class="nav nav-pills">
 			<li role="presentation"><a href="broadcast.php">Send</a></li>
 			<li role="presentation"<?php if (substr($action, 0, 4) != 'list') echo ' class="active"'?>><a href="broadcast_admin.php">Import &amp; Remove</a></li>
 			<li role="presentation"<?php if (substr($action, 0, 4) == 'list') echo ' class="active"'?>><a href="broadcast_admin.php?action=list">List</a></li>
-			<li role="presentation"><a href="log.php?ph=<?php echo urlencode($BROADCAST_CALLER_ID) ?>">Log</a></li>
+			<li role="presentation"><a href="log.php?ph=all_broadcast">Log</a></li>
 		  </ul>
 <?php
 // display the import/remove information unless a list is requested
@@ -191,7 +198,8 @@ include 'footer.php';
 
 function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true)
 {
-	global $BROADCAST_CALLER_ID, $BROADCAST_WELCOME, $BROADCAST_PROGRESS_MARK_EVERY; 
+	global $BROADCAST_CALLER_IDS, $BROADCAST_WELCOME, $BROADCAST_PROGRESS_MARK_EVERY,
+	       $BROADCAST_TWILIO_NOTIFY_SERVICE; 
 	
 	$error = '';
 	$message = '';
@@ -259,9 +267,17 @@ function importNumbers($numbers, $tags, &$error, &$message, $send_welcome = true
 	
 	// send the welcome messages if set
 	if ($send_welcome && $BROADCAST_WELCOME) {
-		sms_send($success_numbers, $BROADCAST_WELCOME, $send_error, 
-				 $BROADCAST_CALLER_ID, $BROADCAST_PROGRESS_MARK_EVERY);
-		$error .= $send_error;
+		// use the Twilio Notify service?
+		if ($BROADCAST_TWILIO_NOTIFY_SERVICE) {
+			// yes
+			sms_sendViaNotify($success_numbers, $BROADCAST_WELCOME, $send_error);
+			$error .= $send_error;
+		} else {
+			// no, send the texts one by one
+			sms_send($success_numbers, $BROADCAST_WELCOME, $send_error, 
+					 $BROADCAST_CALLER_IDS, $BROADCAST_PROGRESS_MARK_EVERY);
+			$error .= $send_error;
+		}
 	}
 	
 	// report on the status of the import

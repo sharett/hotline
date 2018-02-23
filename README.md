@@ -42,7 +42,7 @@ It is not production ready and is very much in progress.
 * Copy the "config_sample.php" file to "config.php".  Edit the "config.php" file:
   * The $TWILIO_ACCOUNT_SID and $TWILIO_AUTH_TOKEN can be found from the [Twilio Account Dashboard] (https://www.twilio.com/user/account).
   * Put the database credentials in the $HOTLINE_DB_ settings.
-  * For mass texting, set the $BROADCAST_ settings including the phone number to use in the '+1NXXNXXXXXX' format ($BROADCAST_CALLER_ID).
+  * For mass texting, set the $BROADCAST_ settings including the phone numbers to use in the '+1NXXNXXXXXX' format ($BROADCAST_CALLER_IDS).
   * For hotlines, set the $HOTLINE_ and $HOTLINES settings including the phone numbers to use in the '+1NXXNXXXXXX' format.
 
 * In your Twilio account, configure each number to make a webhook request to the application.  Use the HTTP basic security you set above (replace username and password and the web address below as appropriate).  For voice, use:
@@ -52,10 +52,26 @@ It is not production ready and is very much in progress.
   
    https://username:password@(web address, example: hotline.hotline.org)/twin/incoming-sms.php
 
-* Optional.  To enable in-browser outbound calling, create a TwiML app (under Phone numbers, Tools) with a voice request URL of:
+* Optional.  To enable in-browser outbound calling, in your Twilio account create a TwiML app (under Phone numbers, Tools) with a voice request URL of:
 
    https://username:password@(web address, example: hotline.hotline.org)/call/voice.php
   * Once you've created the TwiML app, copy its SID and set the $TWILIO_TWIML_APP_SID setting in config.php to it.
+
+* Optional.  To enable using Twilio's Notify service to broadcast text from multiple numbers at once:
+  * Create a Messenging Service in your Twilio account (under Programmable SMS, Messenging Services).
+    * Under the "Configure" menu item:
+      * Select the use case "Notifications, 2-Way".
+      * Check the "Process Inbound Messages" checkbox.
+      * Set the "Request URL" to:
+   https://username:password@(web address, example: hotline.hotline.org)/twin/incoming-sms.php
+      * Verify that "Sticky Sender" is enabled.
+    * Under the "Numbers" menu item:
+      * Add each of the numbers you would like to broadcast from.
+  * Create a Notify Service in your Twilio account (under Notify, Services).
+    * Under the "Configure" menu item:
+      * Select the messenging service you created above under the "Properties, Messenging Service SID"
+    * Copy the "Service SID" to the $BROADCAST_TWILIO_NOTIFY_SERVICE setting in config.php.
+  * Add each of the numbers you are broadcasting from to the $BROADCAST_CALLER_IDS array.
 
 * By default, English and Spanish are set - edit the "languages" table to modify this.  The Twilio code is the language that the voice "alice" will use to speak the text.
   * Each of the prompts may be either the text to be spoken, or a URL to play.  
