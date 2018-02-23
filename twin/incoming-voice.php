@@ -8,7 +8,8 @@
 * 
 * Calls to the broadcast number will play recorded messages in each
 * language and hangup, if messages are set.  Otherwise, calls will be 
-* routed to the hotline.
+* routed to a hotline, if $BROADCAST_SEND_TO_HOTLINE is set.  Otherwise,
+* $HOTLINE_GOODBYE will be played, and the call will hangup.
 * 
 */
 
@@ -30,13 +31,19 @@ if (!db_db_query($sql, $languages, $error)) {
 }
 
 $response = new Twilio\Twiml();
-// is this a broadcast text, and is a message set?
-if (($to == $BROADCAST_CALLER_ID) && count($BROADCAST_VOICE_MESSAGES) > 0) {
+// is this to a broadcast number, and is a message set?
+if (in_array($to, $BROADCAST_CALLER_IDS) && count($BROADCAST_VOICE_MESSAGES) > 0) {
 	// play broadcast messages in each language and hangup
 	foreach ($BROADCAST_VOICE_MESSAGES as $language_code => $message) {
 		sms_playOrSay($response, $message, $language_code);
 	}	
-} elseif (array_key_exists($to, $HOTLINES)) {
+} elseif (array_key_exists($to, $HOTLINES) || $BROADCAST_SEND_TO_HOTLINE) {
+	// calling from a non-hotline number?
+	if (!array_key_exists($to, $HOTLINES)) {
+		// yes, switch to the appropriate hotline
+		$to = $BROADCAST_SEND_TO_HOTLINE;
+	}
+	
 	// use hotline functionality
 	$hotline = $HOTLINES[$to];
 	
@@ -63,6 +70,9 @@ if (($to == $BROADCAST_CALLER_ID) && count($BROADCAST_VOICE_MESSAGES) > 0) {
 	$response->redirect('incoming-voice-dial.php?Digits=TIMEOUT',
 		array('method' => 'GET')
 	);
+} else {
+	// nothing defined, say goodbye
+	sms_playOrSay($response, $HOTLINE_GOODBYE);
 }
 
 echo $response;

@@ -25,7 +25,7 @@ if ($ph) {
 }
 
 // ensure that the "from" number is hotline or broadcast.  Default to first hotline.
-if ($from != $BROADCAST_CALLER_ID && !array_key_exists($from, $HOTLINES)) {
+if (!in_array($from, $BROADCAST_CALLER_IDS) && !array_key_exists($from, $HOTLINES)) {
 	sms_getFirstHotline($from, $hotline, $error);
 }
 
@@ -176,7 +176,7 @@ if (count($comms) >= $page) {
 		   <div class="form-group">
 			<label for="text-message">Phone number</label>
 			<input type="text" class="form-control" name="ph" 
-			       placeholder="<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : $BROADCAST_CALLER_ID ?>"
+			       placeholder="<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : reset($BROADCAST_CALLER_IDS) ?>"
 			       value="<?php echo $ph ?>">
  		   </div>		  
 		   <button class="btn btn-success" id="button-text">Lookup</button>
@@ -198,7 +198,7 @@ include 'footer.php';
 
 function displayPhoneOptions($selected)
 {
-	global $HOTLINES, $BROADCAST_CALLER_ID;
+	global $HOTLINES, $BROADCAST_CALLER_IDS;
 	
 	foreach ($HOTLINES as $hotline_number => $hotline) {
 ?>
@@ -206,11 +206,13 @@ function displayPhoneOptions($selected)
 				<?php if ($selected == $hotline_number) { echo "selected"; } ?>><?php echo $hotline_number ?> (<?php echo $hotline['name'] ?>)</option>
 <?php
 	}
-	if (isset($BROADCAST_CALLER_ID) && $BROADCAST_CALLER_ID) {
+	if (isset($BROADCAST_CALLER_IDS)) {
+		foreach ($BROADCAST_CALLER_IDS as $broadcast_caller_id) {
 ?>
-			 <option value="<?php echo $BROADCAST_CALLER_ID ?>" 
-				<?php if ($selected == $BROADCAST_CALLER_ID) { echo "selected"; } ?>><?php echo $BROADCAST_CALLER_ID ?> (Broadcast)</option>
+			 <option value="<?php echo $broadcast_caller_id ?>" 
+				<?php if ($selected == $broadcast_caller_id) { echo "selected"; } ?>><?php echo $broadcast_caller_id ?> (Broadcast)</option>
 <?php
+		}
 	}
 }
 
