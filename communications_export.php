@@ -16,7 +16,7 @@ $export = array("earliest"=>"", "latest"=>"", "phone"=>"", "type"=>"");
 ?>
 	      <h3>Export to CSV</h2>
 	      <p class="help-block">Use <b>all_broadcast</b> as the phone number to include all broadcast numbers.</p>
-		  <form class="form-inline" action="export.php?type=communications" method="POST">
+	      <form class="form-inline" action="export.php?type=communications" method="POST">
 			<div class="form-group">
 			  <label for="export_earliest">Earliest: </label>
 			  <input type="text" class="form-control" name="export[earliest]" id="export_earliest"
@@ -31,9 +31,9 @@ $export = array("earliest"=>"", "latest"=>"", "phone"=>"", "type"=>"");
 			</div>
 			<div class="form-group">
 			  <label for="export_phone">Limit to phone: </label>
-			  <input type="text" class="form-control" name="export[phone]" id="export_phone" 
+			  <input type="text" class="form-control" name="export[phone]" id="export_phone"
 			         placeholder="<?php echo sms_getFirstHotline($hotline_number, $hotline, $error) ? $hotline_number : reset($BROADCAST_CALLER_IDS) ?>"
-			         value="<?php echo $export['phone'] ?>">			  
+			         value="<?php echo $export['phone'] ?>">
 			</div>
 			<div class="form-group">
 			  <label for="export_type">Type: </label>

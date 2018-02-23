@@ -56,24 +56,42 @@ db_databaseDisconnect();
 */
 function exportCommunicationsToCsv($export, &$error)
 {
+    global $BROADCAST_CALLER_IDS;
+
     $error = '';
 
     // determine what to include
     $earliest = $export['earliest'] ? strtotime($export['earliest']) : '';
     $latest = $export['latest'] ? strtotime($export['latest']) : '';
     $phone = trim($export['phone']);
-    if ($phone) {
+    if ($phone && $phone != 'all_broadcast') {
         if (!sms_normalizePhoneNumber($phone, $error)) {
             return false;
         }
     }
     $type = trim($export['type']);
 
+    // build the query to specify which numbers to export
+    $where_sql_array = array();
+    if (isset($BROADCAST_CALLER_IDS) && $phone == 'all_broadcast') {
+        // show logs for all broadcast numbers
+        foreach ($BROADCAST_CALLER_IDS as $number) {
+            $where_sql_array[] =
+                "phone_from = '".addslashes($number)."' OR ".
+                "phone_to = '".addslashes($number)."'";
+        }
+    } else {
+        // show logs just for a single number
+        $where_sql_array[] =
+            "phone_from = '".addslashes($phone)."' OR ".
+            "phone_to = '".addslashes($phone)."'";
+    }
+
     // load the matching records
     $sql = "SELECT communication_time,phone_from,phone_to,body,status,responded FROM communications WHERE ".
         ($earliest ? ("communication_time > '".addslashes(date("Y-m-d H:i:s", $earliest))."' AND ") : '') .
         ($latest ? ("communication_time < '".addslashes(date("Y-m-d H:i:s", $latest))."' AND ") : '') .
-        ($phone ? ("(phone_from = '".addslashes($phone)."' OR phone_to = '".addslashes($phone)."') AND ") : '') .
+        ($phone ? ("(" . implode(" OR ", $where_sql_array) . ") AND ") : '') .
         ($type ? ("status = '".addslashes($type)."' AND ") : '') .
         " 1 ".
         "ORDER BY communication_time DESC";
@@ -136,6 +154,8 @@ function exportCallTimesToCsv($export, &$error)
     // the CSV file.
     if (db_db_query($sql, $contacts, $error)) {
         $call_times = array();
+        fwrite($fp, "name,number,day,earliest,latest,language_id,receive_texts,".
+                    "receive_calls,receive_call_answered_alerts\n");
         foreach ($contacts as $contact) {
             $call_times = array();
             $sql = "SELECT '".$contact['contact_name']."' AS name,' ".$contact['phone'].
@@ -148,8 +168,6 @@ function exportCallTimesToCsv($export, &$error)
                 echo $error;
                 break;
             }
-            fwrite($fp, "name,number,day,earliest,latest,language_id,receive_texts,".
-                        "receive_calls,receive_call_answered_alerts\n");
             foreach ($call_times as $row) {
                 fputcsv($fp, $row);
             }
