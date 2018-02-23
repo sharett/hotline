@@ -21,7 +21,7 @@ It is not production ready and is very much in progress.
 ## Requirements
 
 - PHP (7.0 used, earlier versions may work).  Uses mysqli to interface with MySQL.
-- [Composer] (https://getcomposer.org) (a PHP package management utility), or manual installation of the [twilio-php] (https://github.com/twilio/twilio-php) library
+- [Composer] (https://getcomposer.org) (a PHP package management utility), or manual installation of the [twilio-php] (https://github.com/twilio/twilio-php) library, version 5.16 or greater.
 - MySQL (5.7 used, earlier versions may work)
 - a [Twilio] (https://www.twilio.com) account
 
