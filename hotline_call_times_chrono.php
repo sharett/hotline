@@ -210,6 +210,10 @@ if ($TEST_MODE) {
 
             // Action buttons.?>
             <td>
+              <a href="hotline_staff.php?display_type=chronological&action=editstaffmodal&id=<?php
+                    echo $call_time['staff_id'] ?>"
+                    title="Edit this staff entry">
+                  <span class="glyphicon glyphicon-user" aria-hidden="true"></span></a>
               <a href="hotline_staff.php?display_type=chronological&action=addcalltimemodal&id=<?php
                     echo $call_time['staff_id'] ?>"
                     title="Add a call time for this staff member">
@@ -229,6 +233,14 @@ if ($TEST_MODE) {
         }
 
         // Finish the table.?>
+              <tr>
+                <td colspan="7"><i>New staff entry </i></td>
+                <td>
+                  <a href="hotline_staff.php?display_type=chronological&action=addstaffmodal"
+                        title="Add a new staff entry">
+                    <span class="glyphicon glyphicon-asterisk" aria-hidden="true"></span></a>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
