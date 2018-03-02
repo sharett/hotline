@@ -84,7 +84,12 @@ if ($TEST_MODE) {
     // with the call times.
     if (count($call_times) == 0) {
         ?>
-        <div><br>There are no call times on record.<br><br></div>
+        <div><br>There are no call times on record.</div>
+        <div><br><i>Add new staff entry</i>
+          <a href="hotline_staff.php?display_type=alphabetical&action=addstaffmodal"
+                title="Add a new staff entry">
+            <span class="glyphicon glyphicon-asterisk" aria-hidden="true"></span></a>
+        <br><br><br></div>
         <?php
     } else {
 
@@ -236,7 +241,7 @@ if ($TEST_MODE) {
               <tr>
                 <td colspan="7"><i>New staff entry </i></td>
                 <td>
-                  <a href="hotline_staff.php?display_type=chronological&action=addstaffmodal"
+                  <a href="hotline_staff.php?display_type=alphabetical&action=addstaffmodal"
                         title="Add a new staff entry">
                     <span class="glyphicon glyphicon-asterisk" aria-hidden="true"></span></a>
                 </td>
