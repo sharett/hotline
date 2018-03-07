@@ -64,19 +64,23 @@ foreach ($contacts as $contact) {
         <td><?php echo getContactNumber($contact['phone']); ?></td>
         <?php
 
-    // Allow removal of staff entry if all call time records are
-    // removed.
+    // Allow editing or removal of staff entry if there are no call time
+    // records, or the addition of a call time.
     if (count($call_times) == 0) {
         ?>
         <td colspan="5"></td><td>
+          <a href="hotline_staff.php?display_type=alphabetical&action=editstaffmodal&id=<?php
+                echo $contact['id'] ?>"
+                title="Edit this staff entry">
+            <span class="glyphicon glyphicon-user" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
                 echo $contact['id'] ?>"
                 title="Add a call time">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=removestaff&id=<?php
                 echo $contact['id'] ?>"
-              onClick="return confirm('Are you sure you want to remove this staff entry?');"
-              title="Remove this staff entry">
+                onClick="return confirm('Are you sure you want to remove this staff entry?');"
+                title="Remove this staff entry">
             <span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
         <?php
     } else {
@@ -162,8 +166,12 @@ foreach ($contacts as $contact) {
             // that have not changed can be output as blank table cells.
             $last_call_time = $call_time; ?>
         <td>
-          <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
+          <a href="hotline_staff.php?display_type=alphabetical&action=editstaffmodal&id=<?php
                 echo $contact['id'] ?>"
+                title="Edit this staff entry">
+            <span class="glyphicon glyphicon-user" aria-hidden="true"></span></a>
+          <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
+                echo $call_time['entry_id'] ?>"
                 title="Add a call time for this staff member">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=editcalltimemodal&id=<?php
@@ -190,6 +198,14 @@ foreach ($contacts as $contact) {
     // Close the foreach loop; iteration over all the contacts is done.
 }
       ?>
+      <tr>
+        <td colspan="7"><i>New staff entry </i></td>
+        <td>
+          <a href="hotline_staff.php?display_type=alphabetical&action=addstaffmodal"
+                title="Add a new staff entry">
+            <span class="glyphicon glyphicon-asterisk" aria-hidden="true"></span></a>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>

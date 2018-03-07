@@ -84,7 +84,12 @@ if ($TEST_MODE) {
     // with the call times.
     if (count($call_times) == 0) {
         ?>
-        <div><br>There are no call times on record.<br><br></div>
+        <div><br>There are no call times on record.</div>
+        <div><br><i>Add new staff entry</i>
+          <a href="hotline_staff.php?display_type=alphabetical&action=addstaffmodal"
+                title="Add a new staff entry">
+            <span class="glyphicon glyphicon-asterisk" aria-hidden="true"></span></a>
+        <br><br><br></div>
         <?php
     } else {
 
@@ -210,6 +215,10 @@ if ($TEST_MODE) {
 
             // Action buttons.?>
             <td>
+              <a href="hotline_staff.php?display_type=chronological&action=editstaffmodal&id=<?php
+                    echo $call_time['staff_id'] ?>"
+                    title="Edit this staff entry">
+                  <span class="glyphicon glyphicon-user" aria-hidden="true"></span></a>
               <a href="hotline_staff.php?display_type=chronological&action=addcalltimemodal&id=<?php
                     echo $call_time['staff_id'] ?>"
                     title="Add a call time for this staff member">
@@ -229,6 +238,14 @@ if ($TEST_MODE) {
         }
 
         // Finish the table.?>
+              <tr>
+                <td colspan="7"><i>New staff entry </i></td>
+                <td>
+                  <a href="hotline_staff.php?display_type=alphabetical&action=addstaffmodal"
+                        title="Add a new staff entry">
+                    <span class="glyphicon glyphicon-asterisk" aria-hidden="true"></span></a>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

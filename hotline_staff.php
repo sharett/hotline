@@ -32,11 +32,16 @@ if (!$authorized) {
 
 // *** ACTIONS ***
 
-// Add or remove a staff member, or add, edit, or remove a call time, or put up
-// a modal dialog to allow the user to add a new call time or edit an existing
+// Add staff members and/or call times in CSV format, or add, edit, or remove a
+// staff member, or add, edit, or remove a call time, or put up a modal dialog
+// to allow the user to add a new staff member or call time or edit an existing
 // one, if any of these actions were requested.
-if ($action == 'add' && $authorized) {
-    addStaff($staff, $error, $success);
+if ($action == 'addascsv' && $authorized) {
+    addStaffAndOrCallTimesAsCsv($staff, $error, $success);
+} elseif ($action == 'addstaff' && $authorized) {
+    addOrEditStaff(false, $staff, $error, $success);
+} elseif ($action == 'editstaff' && $authorized) {
+    addOrEditStaff(true, $staff, $error, $success);
 } elseif ($action == 'removestaff' && $authorized) {
     removeStaff($id, $error, $success);
 } elseif ($action == 'addcalltime' && $authorized) {
@@ -45,6 +50,12 @@ if ($action == 'add' && $authorized) {
     editCallTime($call_time, $call_time_languages, $error, $success);
 } elseif ($action == 'removecalltime' && $authorized) {
     removeCallTime($id, $error, $success);
+} elseif ($action == 'addstaffmodal' && $authorized) {
+    $modal_action = "Add";
+    require 'hotline_staff_modal.php';
+} elseif ($action == 'editstaffmodal' && $authorized) {
+    $modal_action = "Edit";
+    require 'hotline_staff_modal.php';
 } elseif ($action == 'addcalltimemodal' && $authorized) {
     $modal_action = "Add";
     require 'hotline_call_times_modal.php';
@@ -139,10 +150,10 @@ if ($display_type == "chronological") {
 
           ?>
           <form id="text-controls" action="hotline_staff.php" method="POST">
-		    <input type="hidden" name="action" value="add">
+		    <input type="hidden" name="action" value="addascsv">
             <input type="hidden" name="display_type" value="<?php echo $display_type ?>">
 		    <div class="form-group">
-			  <label for="text-message">Add staff</label>
+			  <label for="text-message">Add staff and/or call times manually</label>
 			  <textarea class="form-control" name="staff" rows="3" cols="30"></textarea>
 			  <p class="help-block">
 			    <b>Format:</b> name, phone number, day, earliest time, latest time, language
@@ -153,24 +164,32 @@ if ($display_type == "chronological") {
 		    <button class="btn btn-success" id="button-text">Add</button>
 		  </form>
           <?php
+
+include 'hotline_staff_export.php';
+
 include 'footer.php';
 
 /**
-* Lock the call_times table and any associated tables, modifying the specified
-* error message to hold an error if a problem occurs.
+* Lock the contacts and call_times tables and any associated tables, modifying
+* the specified error message to hold an error if a problem occurs.
 *
 * @param string $staffLine
-*   Line that was being added as new staff and/or new time.
+*   Line that was being added as new staff and/or new time, if any.
 * @param string &$error
 *   Message to be modified to include any error that occurred, if an error
 *   occurs while attempting the lock.
 * @return bool
 *   True if the tables were locked, false otherwise.
 */
-function lockCallTimesTablesForStaffAddition($staffLine, &$error)
+function lockTablesForStaffChange($staffLine, &$error)
 {
-    if (!db_db_command("LOCK TABLES call_times WRITE, call_times AS t2 WRITE", $thisError)) {
-        $error .= "{$staff_line}: ".$thisError."<br />\n";
+    if (!db_db_command("LOCK TABLES contacts WRITE, call_times WRITE, ".
+                "call_times AS t2 WRITE, languages WRITE", $thisError)) {
+        if ($staff_line != "") {
+            $error .= "{$staff_line}: ".$thisError."<br />\n";
+        } else {
+            $error .= $thisError;
+        }
         return false;
     }
     return true;
@@ -180,26 +199,30 @@ function lockCallTimesTablesForStaffAddition($staffLine, &$error)
 * Unlock any locked tables, modifying the specified error message if any.
 *
 * @param string $staffLine
-*   Line that was being added as new staff and/or new time.
+*   Line that was being added as new staff and/or new time, if any.
 * @param string &$error
 *   Message to be modified to include any error that occurred, if an error
 *   occurs while attempting the unlock.
 * @return bool
 *   True if the tables were unlocked, false otherwise.
 */
-function unlockTablesForStaffAddition($staffLine, &$error)
+function unlockTablesForStaffChange($staffLine, &$error)
 {
     if (!db_db_command("UNLOCK TABLES", $thisError)) {
-        $error .= "{$staff_line}: ".$thisError."<br />\n";
+        if ($staff_line != "") {
+            $error .= "{$staff_line}: ".$thisError."<br />\n";
+        } else {
+            $error .= $thisError;
+        }
         return false;
     }
     return true;
 }
 
 /**
-* Add staff to the database
+* Add staff and/or call times to the database, with the input being in CSV format.
 *
-* Each entry is separated by a newline.  Format:
+* Each entry is separated by a newline. Format:
 *    name,phone number,day,earliest time,latest time,language id,texts (0 or 1).
 *
 * @param array $staff
@@ -212,7 +235,7 @@ function unlockTablesForStaffAddition($staffLine, &$error)
 * @return bool
 *   True if any staff were provided.
 */
-function addStaff($staff, &$error, &$message)
+function addStaffAndOrCallTimesAsCsv($staff, &$error, &$message)
 {
     $error = '';
     $message = '';
@@ -255,14 +278,20 @@ function addStaff($staff, &$error, &$message)
             continue;
         }
 
-        // is this number in the database already?
+        // Lock the tables.
+        if (!lockTablesForStaffChange($staff_line, $error)) {
+            continue;
+        }
+
+        // See if this number is not already in the database.
         $sql = "SELECT * FROM contacts WHERE phone='".addslashes($staff_array[1])."'";
         if (!db_db_getrow($sql, $contact, $db_error)) {
             $error .= "{$staff_line}: {$db_error}<br />\n";
             continue;
         }
         if ($contact['id']) {
-            // it's already in the database, update the name
+
+            // Since it is already in the database, update the name.
             $sql = "UPDATE contacts SET contact_name='".addslashes(trim($staff_array[0]))."' ".
                 "WHERE id='{$contact['id']}'";
             if (!db_db_command($sql, $db_error)) {
@@ -270,14 +299,16 @@ function addStaff($staff, &$error, &$message)
                 continue;
             }
         } else {
-            // it's not in the database, add it
+
+            // Since it is not in the database, add it.
             $sql = "INSERT INTO contacts SET contact_name='".addslashes(trim($staff_array[0]))."',".
                 "phone='".addslashes($staff_array[1])."'";
             if (!db_db_command($sql, $db_error)) {
                 $error .= "{$staff_line}: {$db_error}<br />\n";
                 continue;
             }
-            // retrieve the newly added record
+
+            // Retrieve the newly added record.
             $sql = "SELECT * FROM contacts WHERE phone='".addslashes($staff_array[1])."'";
             if (!db_db_getrow($sql, $contact, $db_error)) {
                 $error .= "{$staff_line}: {$db_error}<br />\n";
@@ -285,7 +316,7 @@ function addStaff($staff, &$error, &$message)
             }
         }
 
-        // is a day provided?
+        // See if a day is provided.
         if (isset($staff_array[2]) && trim($staff_array[2])) {
             // provide defaults
             if (!$staff_array[3]) {
@@ -313,16 +344,18 @@ function addStaff($staff, &$error, &$message)
                 $staff_array[8] = 0;
             }
 
-            // get language_id from the language_keypress
+            // Ensure at least one of the received types is specified.
+            if (!$staff_array[6] && !$staff_array[7] && !$staff_array[8]) {
+                $error .= "{$staff_line}: No 'received type' (texts, ".
+                        "calls, or call answered alerts) specified.<br />\n";
+                continue;
+            }
+
+            // Get language_id from the language_keypress
             $language_id = "1";
             $sql = "SELECT id FROM languages WHERE keypress='". addslashes($staff_array[5]) . "'";
             if (!db_db_getone($sql, $language_id, $db_error)) {
                 $error .= "{$staff_line}: {$db_error}<br />\n";
-                continue;
-            }
-
-            // Lock the tables.
-            if (!lockCallTimesTablesForStaffAddition($staff_line, $error)) {
                 continue;
             }
 
@@ -342,14 +375,14 @@ function addStaff($staff, &$error, &$message)
                 addslashes($language_id)."')";
             if (!db_db_getone($query, $results, $thisError)) {
                 $error .= "{$staff_line}: {$thisError}<br />\n";
-                unlockTablesForStaffAddition($staff_line, $error);
+                unlockTablesForStaffChange($staff_line, $error);
                 continue;
             }
             if ($results) {
                 $thisError = "The call time record could not be added because it ".
                         "is a duplicate of an existing entry.";
                 $error .= "{$staff_line}: {$thisError}<br />\n";
-                unlockTablesForStaffAddition($staff_line, $error);
+                unlockTablesForStaffChange($staff_line, $error);
                 continue;
             }
 
@@ -365,13 +398,13 @@ function addStaff($staff, &$error, &$message)
                 $receive_call_answered_alerts."' LIMIT 1";
             if (!db_db_getone($query, $entryIdentifier, $thisError)) {
                 $error .= "{$staff_line}: {$thisError}<br />\n";
-                unlockTablesForStaffAddition($staff_line, $error);
+                unlockTablesForStaffChange($staff_line, $error);
                 continue;
             }
             if (!$entryIdentifier) {
                 if (!getNextAvailableEntryIdentifier($entryIdentifier, $thisError)) {
                     $error .= "{$staff_line}: {$thisError}<br />\n";
-                    unlockTablesForStaffAddition($staff_line, $error);
+                    unlockTablesForStaffChange($staff_line, $error);
                     continue;
                 }
             }
@@ -390,21 +423,132 @@ function addStaff($staff, &$error, &$message)
             if (!db_db_command($sql, $db_error)) {
                 $error .= "{$staff_line}: {$db_error}<br />\n";
             }
-
-            // Unlock the tables.
-            unlockTablesForStaffAddition($staff_line, $error);
         }
 
-        // import successful
+        // Unlock the tables.
+        unlockTablesForStaffChange($staff_line, $error);
+
+        // The import was successful.
         $success_count++;
     }
 
-    // report on the status of the import
+    // Report on the status of the import.
     $error_count = count($staff_lines) - $success_count;
     $message = "Imported {$success_count} staff entries successfully. ";
     if ($error_count) {
         $message .= "{$error_count} staff entries had errors.";
     }
+
+    return true;
+}
+
+/**
+* Add or edit a staff entry to the database.
+*
+* Data is passed from a modal form.
+*
+* @param bool edit
+*   Flag indicating whether editing or adding.
+* @param array $contact
+*   Contact form data.  Contains the following keys:
+*       'id' => Identifier of the contact (only provided if editing).
+*		'contact_name' => Contact name.
+* 		'phone' => Contact phone number.
+* @param string &$error
+*   Errors if any occurred.
+* @param string &$message
+*   An informational message if appropriate.
+* @return bool
+*   True unless an error occurred.
+*/
+function addOrEditStaff($edit, $contact, &$error, &$message)
+{
+    $error = '';
+    $message = '';
+
+    // Lock the tables.
+    $beingInserted = "";
+    if (!lockTablesForStaffChange($beingInserted, $db_error)) {
+        $error = "Error while locking tables: ".$db_error;
+        return false;
+    }
+
+    // Make sure the number is in E164 format, and that it is not already
+    // in the database.
+    $action = ($edit ? "edited" : "added");
+    $other = ($edit ? "another" : "an");
+    if (!sms_normalizePhoneNumber($contact['phone'], $error)) {
+        $error = "The staff entry could not be ".$action." because the ".
+                "specified phone number is invalid.";
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+    $sql = "SELECT * FROM contacts WHERE phone='".addslashes($contact['phone'])."'";
+    if ($edit) {
+        $sql .= " AND NOT id=".$contact['id'];
+    }
+    if (!db_db_getrow($sql, $existingContact, $db_error)) {
+        $error = "Error while looking up the provided phone number: ".$db_error;
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+    if ($existingContact['id']) {
+        $error = "The staff entry could not be ".$action." because the ".
+                "specified phone number is already assigned to ".$other." ".
+                "existing staff entry.";
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+
+    // Ensure that a valid name was specified, and that it is not already
+    // in the database.
+    $contactName = trim($contact['contact_name']);
+    if (!$contactName) {
+        $error = "The staff entry could not be ".$action." because no ".
+                "name was specified.";
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+    $sql = "SELECT * FROM contacts WHERE contact_name='".addslashes($contactName)."'";
+    if ($edit) {
+        $sql .= " AND NOT id=".$contact['id'];
+    }
+    if (!db_db_getrow($sql, $existingContact, $db_error)) {
+        $error = "Error while looking up the provided name: ".$db_error;
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+    if ($existingContact['id']) {
+        $error = "The staff entry could not be ".$action." because the ".
+                "specified name is already assigned to ".$other." existing ".
+                "staff entry.";
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+
+    // Insert the new entry into the table if adding, or update the existing
+    // entry if editing.
+    if ($edit) {
+        $sql = "UPDATE contacts SET contact_name='".addslashes($contactName).
+            "', phone='".addslashes($contact['phone'])."' WHERE id=".$contact['id'];
+    } else {
+        $sql = "INSERT INTO contacts SET contact_name='".addslashes($contactName)."',".
+            "phone='".addslashes($contact['phone'])."'";
+    }
+    if (!db_db_command($sql, $db_error)) {
+        $error = "Error while ".($edit ? "inserting" : "updating").
+                " the staff entry: ".$db_error;
+        unlockTablesForStaffChange($beingInserted, $db_error);
+        return false;
+    }
+
+    // Unlock the tables.
+    if (!unlockTablesForStaffChange($beingInserted, $db_error)) {
+        $error = "Error while unlocking tables: ".$db_error;
+        return false;
+    }
+
+    $message = "The staff entry was ".$action.".";
 
     return true;
 }
@@ -426,19 +570,38 @@ function addStaff($staff, &$error, &$message)
 */
 function removeStaff($id, &$error, &$message)
 {
-    // are all call time entries removed?
+
+    // Lock the tables.
+    $beingRemoved = "";
+    if (!lockTablesForStaffChange($beingRemoved, $db_error)) {
+        $error = "Error while locking tables: ".$db_error;
+        return false;
+    }
+
+    // Ensure that all call time entries for this staff entry have been removed.
     $sql = "SELECT COUNT(*) FROM call_times WHERE contact_id='".addslashes($id)."'";
-    if (!db_db_getone($sql, $call_time_count, $error)) {
+    if (!db_db_getone($sql, $call_time_count, $db_error)) {
+        $error = "Error while checking for call time entries: ".$db_error;
+        unlockTablesForStaffChange($beingRemoved, $db_error);
         return false;
     }
     if ($call_time_count) {
         $error = "Please remove the call time entries first.";
+        unlockTablesForStaffChange($beingRemoved, $db_error);
         return false;
     }
 
-    // delete the staff entry
+    // Delete the staff entry.
     $sql = "DELETE FROM contacts WHERE id='".addslashes($id)."'";
-    if (!db_db_command($sql, $error)) {
+    if (!db_db_command($sql, $db_error)) {
+        $error = "Error while deleting staff entry: ".$db_error;
+        unlockTablesForStaffChange($beingRemoved, $db_error);
+        return false;
+    }
+
+    // Unlock the tables.
+    if (!unlockTablesForStaffChange($beingRemoved, $db_error)) {
+        $error = "Error while unlocking tables: ".$db_error;
         return false;
     }
 
