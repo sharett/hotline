@@ -171,7 +171,7 @@ foreach ($contacts as $contact) {
                 title="Edit this staff entry">
             <span class="glyphicon glyphicon-user" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=addcalltimemodal&id=<?php
-                echo $call_time['entry_id'] ?>"
+                echo $contact['id'] ?>"
                 title="Add a call time for this staff member">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
           <a href="hotline_staff.php?display_type=alphabetical&action=editcalltimemodal&id=<?php
