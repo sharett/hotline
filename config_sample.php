@@ -3,8 +3,8 @@
 * @file
 * Base configuration file
 *
-* This file must be included first.  
-* 
+* This file must be included first.
+*
 */
 
 // *** DEFINE GLOBALS ***
@@ -43,23 +43,33 @@ $BROADCAST_TWILIO_NOTIFY_SERVICE = '';
 
 // Broadcast prompts
 $BROADCAST_WELCOME = "Welcome to the alert list. ".
-	"To remove yourself from the list, text OFF.";
+    "To remove yourself from the list, text OFF.";
 $BROADCAST_GOODBYE = "You will no longer receive alerts. To put yourself back on, ".
-	"text ON.";
+    "text ON.";
 
-// If set, callers will hear this message in each language and then it will hang up.  The format is an array, 
-// with each key the language code, and the value the text to read in that language.  "es-MX" is Spanish, 
+// If set, callers will hear this message in each language and then it will hang up.  The format is an array,
+// with each key the language code, and the value the text to read in that language.  "es-MX" is Spanish,
 // "en-US" is English.  Don't set this and $BROADCAST_SEND_TO_HOTLINE.
 // Example: 'en-US' => "Goodbye"
 $BROADCAST_VOICE_MESSAGES = array(
 
 );
 
+// Message to be sent via text to staff members who are about to start their
+// shifts. The time at which the shift is to start will be appended to this
+// string to form the message.
+$STAFF_REMINDER_START_SHIFT = "Reminder: Your hotline staffing shift begins at ";
+
+// Message to be sent via text to staff members who are about to end their
+// shifts. The time at which the shift is to end will be appended to this
+// string to form the message.
+$STAFF_REMINDER_END_SHIFT = "Reminder: Your hotline staffing shift ends at ";
+
 // If set, callers to the broadcast numbers will be redirected to this hotline.
 // Don't set this and $BROADCAST_VOICE_MESSAGES
 $BROADCAST_SEND_TO_HOTLINE = '';
 
-// When a broadcast text is sent that is limited to certain tags, this text will be added to the database 
+// When a broadcast text is sent that is limited to certain tags, this text will be added to the database
 // records of the text.
 $BROADCAST_LIMITED_TO_TAGS_TEXT = "LIMITED TO TAGS";
 
@@ -73,12 +83,12 @@ $BROADCAST_PROGRESS_MARK_EVERY = 3;
 
 // Each hotline is an element of this array.  The array key is the hotline number, and the values are prompts.
 $HOTLINES = array(
-	'+1NXXNXXXXXX' => 
-		array('name' => 'Just another hotline',
-		      'intro' => 'Just another hotline',
-		      'voicemail' => 'or press 0 for voicemail',
-		      'staff_prompt_1' => 'Just another hotline call in ', // language will be added here
-		      'staff_prompt_2' => '. Press 1 to accept.',
+    '+1NXXNXXXXXX' =>
+        array('name' => 'Just another hotline',
+              'intro' => 'Just another hotline',
+              'voicemail' => 'or press 0 for voicemail',
+              'staff_prompt_1' => 'Just another hotline call in ', // language will be added here
+              'staff_prompt_2' => '. Press 1 to accept.',
               'text_error' => 'Unable to forward your text.  Please call in.',
               'text_response' => 'Your message has been received.  Someone will respond shortly.'),
 );
