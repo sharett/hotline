@@ -65,7 +65,11 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 
 /**
 * Retrieve the contacts that are experiencing shift changes anytime within
-* the specified time range.
+* the specified time range, with one entry for each such shift change, with
+* any shift changes that are not to be reminded pruned out. Note that this
+* method is smart about not flagging shift "changes" that are really two
+* contiguous shifts that lie to either side of the midnight boundary, i.e. one
+* ends at 11:59pm and the other begins at 12:00am the following day.
 *
 * @param array &$contacts
 *   Array of contacts to be loaded.
@@ -89,14 +93,17 @@ function sms_getActiveContacts(&$contacts, $language_id, $receives, &$error)
 
 function sms_getShiftChangeContacts(&$contacts, $day, $startTime, $endTime, $boundary, &$error)
 {
+
+    // Query the database for shift changes within the appropriate time
+    // period.
     $weekend = ($day == 'Sun' || $day == 'Sat');
     if ($endTime == "00:00") {
         $endTime = "24:00";
     }
-
-    $sql = "SELECT DISTINCT contacts.*, earliest, latest FROM call_times ".
+    $sql = "SELECT DISTINCT contacts.*, earliest, latest, receive_texts, ".
+        "receive_calls, receive_call_answered_alerts FROM call_times ".
         "LEFT JOIN contacts ON contacts.id = call_times.contact_id ".
-        "WHERE enabled='y' AND ".
+        "WHERE enabled='y' AND remind='y' AND ".
         "(day='all' OR day='{$day}' OR ".
         ($weekend ? "day='weekends'" : "day='weekdays'") . ") AND ".
         "(".$boundary." >= '".$startTime."') AND ".
@@ -105,7 +112,105 @@ function sms_getShiftChangeContacts(&$contacts, $day, $startTime, $endTime, $bou
         return false;
     }
 
+    // If looking for shift endings and the specified end time is midnight,
+    // then a check for next day continuation of shifts will need to be made
+    // in order to ensure that notifications do not get sent for shifts that
+    // are continuing through midnight.
+    if ((($boundary == "latest") && ($endTime == "24:00")) ||
+            (($boundary == "earliest") && ($startTime == "00:00"))) {
+
+        // See if any shifts that were retrieved end at or start at midnight;
+        // if not, there is no need to do any further checking.
+        $contactShiftIndicesToCheck = array();
+        foreach ($contacts as $index => $contact) {
+            if ($contact[$boundary] == ($boundary == "latest" ? "23:59:00" : "00:00:00")) {
+                $contactShiftIndicesToCheck[] = $index;
+            }
+        }
+        if (empty($contactShiftIndicesToCheck)) {
+            return true;
+        }
+
+        // Query the database for shifts that are starting at midnight the
+        // next day (if this invocation is to find shifts that are ending)
+        // or that ended the previous day (if this invocation is to find
+        // shifts that are starting).
+        if ($boundary == "latest") {
+            $otherBoundary = "earliest";
+            $otherDay = date("D", strtotime($day."+1 day"));
+            $otherTime = "00:00";
+        } else {
+            $otherBoundary = "latest";
+            $otherDay = date("D", strtotime($day."-1 day"));
+            $otherTime = "23:59";
+        }
+        $otherDayWeekend = ($otherDay == 'Sun' || $otherDay == 'Sat');
+        $otherSql = "SELECT DISTINCT contacts.*, earliest, latest, ".
+            "receive_texts, receive_calls, receive_call_answered_alerts ".
+            "FROM call_times LEFT JOIN contacts ".
+            "ON contacts.id = call_times.contact_id ".
+            "WHERE enabled='y' AND ". "(day='all' OR day='{$otherDay}' OR ".
+            ($otherDayWeekend ? "day='weekends'" : "day='weekdays'") . ") AND ".
+            $otherBoundary."='".$otherTime."'";
+        if (!db_db_query($otherSql, $otherContacts, $error)) {
+            return false;
+        }
+
+        // Create a set of the shifts at the other side of the midnight
+        // boundary, with each element being a concatenation of the
+        // contact's name and the three communication type flags for
+        // that shift. This will be used below to match against the
+        // shift change entries that are to be pruned of any that are
+        // not really ending or starting because they are contiguous
+        // with these "other side of midnight" shifts.
+        $otherContactNamesAndCommTypeFlags = array();
+        foreach ($otherContacts as $contact) {
+            $otherContactNamesAndCommTypeFlags[sms_getCallTimeEntryAsKey($contact)] = true;
+        }
+
+
+        echo "Base contacts to be checked:\n";
+        foreach ($contactShiftIndicesToCheck as $index) {
+            $contact = $contacts[$index];
+            echo "    ".sms_getCallTimeEntryAsKey($contact).": ".$contact['earliest'].
+                    " to ".$contact['latest']."\n";
+        }
+        echo "Other contacts against which to check:\n";
+        foreach ($otherContactNamesAndCommTypeFlags as $key => $value) {
+            echo "    ".$key."\n";
+        }
+
+
+        echo "Contact to be removed as a result:\n";
+        foreach ($contactShiftIndicesToCheck as $index) {
+            $contact = $contacts[$index];
+            if (isset($otherContactNamesAndCommTypeFlags[sms_getCallTimeEntryAsKey($contact)])) {
+                echo "    ".sms_getCallTimeEntryAsKey($contact).": ".$contact['earliest'].
+                        " to ".$contact['latest']."\n";
+                unset($contacts[$index]);
+            }
+        }
+    }
     return true;
+}
+
+/**
+* Given the specified call times entry, get a string comprised of a concatenation
+* of the name and the three communication type flag values.
+*
+* @param array &$entry
+*   Associative array holding at least an entry for 'contact_name', 'receive_texts',
+*   'receive_calls', and 'receive_call_answered_alerts'.
+*
+* @return string
+*   Concatenation of the name and three communication type flag values, each
+*   separated from the next by a hyphen (-).
+*/
+
+function sms_getCallTimeEntryAsKey(&$entry)
+{
+    return $entry['contact_name']."-".$entry['receive_texts']."-".
+            $entry['receive_calls']."-".$entry['receive_call_answered_alerts'];
 }
 
 /**

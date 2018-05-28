@@ -178,6 +178,31 @@ function ensureDatabaseIsUpToDate()
                 "added and populated for all existing entries.");
     }
 
+    // Determine whether or not the remind column exists in the table, and
+    // if it does not, create it and populate it.
+    $query = "SHOW COLUMNS FROM call_times LIKE 'remind'";
+    if (!db_db_getone($query, $results, $error)) {
+        unlockTablesForDatabaseUpdate("The call times table could not be checked ".
+                "for the remind column's existence because a database error ".
+                "occurred: ".$error);
+        return;
+    }
+    if (!$results) {
+
+        // Add the column to the table.
+        $sql = "ALTER TABLE call_times ADD remind enum('y','n') NOT NULL ".
+                "DEFAULT 'y' AFTER enabled";
+        if (!db_db_command($sql, $error)) {
+            unlockTablesForDatabaseUpdate("The call times table could not have ".
+                    "the remind column added because a database error occurred: ".
+                    $error);
+            return;
+        }
+
+        displaySuccess("The call times table had the remind column added ".
+                "and populated for all existing entries.");
+    }
+
     // Unlock the table.
     if (!unlockTablesForDatabaseUpdate(null)) {
         return;

@@ -74,7 +74,8 @@ function db_databaseDisconnect()
 
 function db_error($description, $severity = 'error')
 {
-    $admin_user = $_SERVER['PHP_AUTH_USER'] ? $_SERVER['PHP_AUTH_USER'] : $_SERVER['REMOTE_USER'];
+    $admin_user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] :
+            (isset($_SERVER['REMOTE_USER']) ? $_SERVER['REMOTE_USER'] : $_SERVER['USER']);
 
     $sql = "INSERT INTO errors SET ".
         "severity='".trim(addslashes($severity))."',".
