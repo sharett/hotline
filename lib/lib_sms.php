@@ -168,25 +168,11 @@ function sms_getShiftChangeContacts(&$contacts, $day, $startTime, $endTime, $bou
             $otherContactNamesAndCommTypeFlags[sms_getCallTimeEntryAsKey($contact)] = true;
         }
 
-
-        echo "Base contacts to be checked:\n";
-        foreach ($contactShiftIndicesToCheck as $index) {
-            $contact = $contacts[$index];
-            echo "    ".sms_getCallTimeEntryAsKey($contact).": ".$contact['earliest'].
-                    " to ".$contact['latest']."\n";
-        }
-        echo "Other contacts against which to check:\n";
-        foreach ($otherContactNamesAndCommTypeFlags as $key => $value) {
-            echo "    ".$key."\n";
-        }
-
-
-        echo "Contact to be removed as a result:\n";
+        // Prune any shifts that are contiguous with shifts at the
+        // other side of midnight, as compiled above.
         foreach ($contactShiftIndicesToCheck as $index) {
             $contact = $contacts[$index];
             if (isset($otherContactNamesAndCommTypeFlags[sms_getCallTimeEntryAsKey($contact)])) {
-                echo "    ".sms_getCallTimeEntryAsKey($contact).": ".$contact['earliest'].
-                        " to ".$contact['latest']."\n";
                 unset($contacts[$index]);
             }
         }
