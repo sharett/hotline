@@ -24,6 +24,13 @@ db_databaseConnect();
 // Get the first hotline number.
 if (sms_getFirstHotline($hotlineNumber, $hotlinePrompts, $error)) {
 
+    // NOTE: If there is ever a need to test this for particular
+    // days and times, a line like the following:
+    //
+    //    $timestamp = strtotime("Wed 11:40pm");
+    //
+    // replacing the assignment to $timestamp below works.
+
     // Get the current time, and from that derive the lower and upper
     // bounds for the time range in which to look for shift changes.
     $timestamp = time();
@@ -31,6 +38,10 @@ if (sms_getFirstHotline($hotlineNumber, $hotlinePrompts, $error)) {
     $day = date("D", $timestamp);
     $startTime = date("H:i", strtotime("+5 minutes", strtotime($currentTime)));
     $endTime = date("H:i", strtotime("+20 minutes", strtotime($currentTime)));
+    $checkForNextDayContinuation = false;
+
+    // If the start time is midnight, then the next day is to be
+    // queried.
     if ($startTime == "00:00") {
         $day = date("D", strtotime("+1 day", $timestamp));
     }
@@ -54,32 +65,36 @@ if (sms_getFirstHotline($hotlineNumber, $hotlinePrompts, $error)) {
         );
         if ($valid) {
 
-            // Prune through the results, finding for each staff member
-            // in the results the earliest entry (if going on shift) or
-            // the latest entry (if going off shift).
-            $shiftChangesForContacts = array();
+            // Iterate through the results, sending a text to each staff
+            // member about each shift change for which an entry was
+            // found.
+            $descriptionsForIncomingCommTypes = array(
+                    "receive_texts" => $RECEIVE_TEXTS_DESCRIPTION,
+                    "receive_calls" => $RECEIVE_CALLS_DESCRIPTION,
+                    "receive_call_answered_alerts" => $RECEIVE_CALL_ANSWERED_ALERTS_DESCRIPTION
+            );
             foreach ($contacts as $contact) {
-                if (isset($shiftChangesForContacts[$contact['contact_name']])) {
-                    $recordedTime = strtotime($shiftChangesForContacts[$contact['contact_name']][$boundary]);
-                    $newTime = strtotime($contact[$boundary]);
-                    if ((($boundary == "earliest") &&
-                            ($recordedTime > $newTime)) ||
-                            (($boundary == "latest") &&
-                            ($recordedTime < $newTime))) {
-                        $shiftChangesForContacts[$contact['contact_name']] = $contact;
-                    }
-                } else {
-                    $shiftChangesForContacts[$contact['contact_name']] = $contact;
-                }
-            }
 
-            // Iterate through the pruned results, sending a text to each
-            // staff member for whom an entry was found.
-            foreach ($shiftChangesForContacts as $contactName => $contact) {
+                // Get the number to which to send the message, and
+                // compose the message text itself.
                 $numbers = array($contact['phone']);
-                $text = ($boundary == "earliest" ? $STAFF_REMINDER_START_SHIFT :
-                        $STAFF_REMINDER_END_SHIFT);
+                $text = $STAFF_REMINDER_SHIFT_CHANGE_MESSAGE_PREFIX;
+                $includedCommType = false;
+                foreach ($descriptionsForIncomingCommTypes as $commType => $description) {
+                    if ($contact[$commType] == "y") {
+                        if ($includedCommType) {
+                            $text .= ", ";
+                        }
+                        $text .= $description;
+                        $includedCommType = true;
+                    }
+                }
+                $text .= ($boundary == "earliest" ? $STAFF_REMINDER_SHIFT_START_DESCRIPTION :
+                        $STAFF_REMINDER_SHIFT_END_DESCRIPTION);
                 $text .= date("g:i a", strtotime($contact[$boundary]));
+                $text .= $STAFF_REMINDER_SHIFT_CHANGE_MESSAGE_SUFFIX;
+
+                // Send the message as a text.
                 if (sms_send($numbers, $text, $error, $hotlineNumber) == false) {
                     db_error("Error: Could not send shift change text to ".
                             $contact['contact_name']." at ".$contact['phone'].": ".

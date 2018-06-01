@@ -27,7 +27,8 @@ if ($modal_action == "Add") {
         'language_ids' => null,
         'receive_texts' => "y",
         'receive_calls' => "y",
-        'receive_call_answered_alerts' => "n"
+        'receive_call_answered_alerts' => "n",
+        'remind' => 'y'
     );
 } else {
 
@@ -35,10 +36,10 @@ if ($modal_action == "Add") {
     // listed sequentially.
     $sql = "SELECT entry_id, contact_id, day, earliest, latest, ".
             "receive_texts, receive_calls, receive_call_answered_alerts, ".
-            "GROUP_CONCAT(language_id) AS language_ids FROM call_times ".
+            "GROUP_CONCAT(language_id) AS language_ids, remind FROM call_times ".
             "WHERE entry_id='".addslashes($id)."' GROUP BY entry_id, ".
             "contact_id, day, earliest, latest, receive_texts, ".
-            "receive_calls, receive_call_answered_alerts";
+            "receive_calls, receive_call_answered_alerts, remind";
     db_db_getrow($sql, $call_time, $error);
     $call_time['earliest'] = getDisplayableTime($call_time['earliest']);
     $call_time['latest'] = getDisplayableTime($call_time['latest']);
@@ -154,6 +155,14 @@ if (($call_time['language_ids'] == null) || in_array($language['id'], $call_time
                     <?php
                         echo($call_time['receive_call_answered_alerts'] == "y" ? " checked" : "")
                     ?>> call answered alerts
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="calltime_remind" name="call_time[remind]"
+                    <?php
+                        echo($call_time['remind'] == "y" ? " checked" : "")
+                    ?>> Remind staff member via text when shift starts and ends
             </label>
           </div>
         </div>

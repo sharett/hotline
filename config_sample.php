@@ -55,15 +55,24 @@ $BROADCAST_VOICE_MESSAGES = array(
 
 );
 
-// Message to be sent via text to staff members who are about to start their
-// shifts. The time at which the shift is to start will be appended to this
-// string to form the message.
-$STAFF_REMINDER_START_SHIFT = "Reminder: Your hotline staffing shift begins at ";
+// Descriptions of the different types of incoming communications for which staff
+// members may be scheduled.
+$RECEIVE_TEXTS_DESCRIPTION = "texts";
+$RECEIVE_CALLS_DESCRIPTION = "calls";
+$RECEIVE_CALL_ANSWERED_ALERTS_DESCRIPTION = "call-answered alerts";
 
-// Message to be sent via text to staff members who are about to end their
-// shifts. The time at which the shift is to end will be appended to this
-// string to form the message.
-$STAFF_REMINDER_END_SHIFT = "Reminder: Your hotline staffing shift ends at ";
+// Substrings used to compose messages to be sent via text to staff members who are
+// about to start or end their shifts. To $STAFF_REMINDER_SHIFT_CHANGE_MESSAGE_PREFIX
+// is appended the type(s) of incoming communications ($RECEIVE_TEXTS_DECRIPTION,
+// $RECEIVE_CALLS_DECRIPTION, and/or $RECEIVE_CALL_ANSWERED_ALERTS_DECRIPTION) as a
+// comma-separated list for which the staff member is scheduled, then the
+// $STAFF_REMINDER_SHIFT_START_DESCRIPTION or $STAFF_REMINDER_SHIFT_END_DESCRIPTION as
+// appropriate, then the time at which the shift change is to occur, and finally the
+// $STAFF_REMINDER_SHIFT_CHANGE_MESSAGE_SUFFIX.
+$STAFF_REMINDER_SHIFT_CHANGE_MESSAGE_PREFIX = "Reminder: Your hotline staffing shift (";
+$STAFF_REMINDER_SHIFT_START_DESCRIPTION = ") begins at ";
+$STAFF_REMINDER_SHIFT_END_DESCRIPTION = ") ends at ";
+$STAFF_REMINDER_SHIFT_CHANGE_MESSAGE_SUFFIX = ".";
 
 // If set, callers to the broadcast numbers will be redirected to this hotline.
 // Don't set this and $BROADCAST_VOICE_MESSAGES

@@ -496,6 +496,8 @@ function addCallTime($call_time, $call_time_languages, &$error, &$message)
 
     // Add one call_times record for each language, with all records having
     // the same entry identifier.
+    $remind = (isset($call_time['remind']) &&
+            ($call_time['remind'] == 'on') ? "y" : "n");
     foreach ($languages as $language) {
         $sql = "INSERT INTO call_times SET ".
             "entry_id='".addslashes($entryIdentifier)."',".
@@ -506,7 +508,8 @@ function addCallTime($call_time, $call_time_languages, &$error, &$message)
             "language_id='".addslashes($language)."',".
             "receive_texts='".$receive_texts."',".
             "receive_calls='".$receive_calls."',".
-            "receive_call_answered_alerts='".$receive_call_answered_alerts."'";
+            "receive_call_answered_alerts='".$receive_call_answered_alerts."',".
+            "remind='".$remind."'";
         if (!db_db_command($sql, $error)) {
             $error = "The call time entry could not be fully added due to ".
                     "a database error: ".$error;
@@ -649,6 +652,8 @@ function editCallTime($call_time, $call_time_languages, &$error, &$message)
 
     // Add one call_times record for each language, with all records having
     // the same entry identifier.
+    $remind = (isset($call_time['remind']) &&
+            ($call_time['remind'] == 'on') ? "y" : "n");
     foreach ($languages as $language) {
         $sql = "INSERT INTO call_times SET ".
             "entry_id='".addslashes($call_time['entry_id'])."',".
@@ -659,7 +664,8 @@ function editCallTime($call_time, $call_time_languages, &$error, &$message)
             "language_id='".addslashes($language)."',".
             "receive_texts='".$receive_texts."',".
             "receive_calls='".$receive_calls."',".
-            "receive_call_answered_alerts='".$receive_call_answered_alerts."'";
+            "receive_call_answered_alerts='".$receive_call_answered_alerts."',".
+            "remind='".$remind."'";
         if (!db_db_command($sql, $error)) {
             $error = "The call time entry could not be fully updated due to ".
                     "a database error: ".$error;
