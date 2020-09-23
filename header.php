@@ -14,7 +14,8 @@ db_databaseConnect();
 $pages = array("Broadcast" => "broadcast.php", 
     "Hotline" => "hotline_staff.php",
     "Call / Text" => "contact.php", 
-    "Log" => "log.php");
+    "Log" => "log.php",
+    "Logout" => "javascript:logout();");
 
 ?>
 <!DOCTYPE html>
@@ -36,6 +37,32 @@ $pages = array("Broadcast" => "broadcast.php",
 
 <!-- Custom styles for this template -->
     <link href="dashboard.css" rel="stylesheet">
+
+<script>
+  // reference: http://stackoverflow.com/questions/233507/how-to-log-out-user-from-web-site-using-basic-authentication
+  function logout() {
+    var outcome, u, m = "You should be logged out now."
+    // IE has a simple solution for it - API:
+    try { outcome = document.execCommand("ClearAuthenticationCache") }catch(e){}
+    // Other browsers need a larger solution - AJAX call with special user name - 'logout'.
+    if (!outcome) {
+      outcome = (function(x){
+        if (x) {
+          x.open("HEAD", location.href, true, "logout", (new Date()).getTime().toString())
+          x.send("")
+          return 1
+        } else {
+          return
+        }
+      })(window.XMLHttpRequest ? new window.XMLHttpRequest() : ( window.ActiveXObject ? new ActiveXObject("Microsoft.XMLHTTP") : u ))
+    }
+    if (!outcome) {
+      m = "Your browser doesn't support log out functionality. Close all windows and restart the browser."
+    }
+    alert(m)
+    window.location = location.href
+  }
+</script>
 
 </head>
 <body>
